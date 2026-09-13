@@ -48,7 +48,7 @@ COLOR_RANGES_HSV = {
     ],
 }
 
-# Color detection - HSV
+# Color detection - THRESHOLD
 THRESHOLD_RANGES = {
     Color.RED: (0, 80),
     Color.GREEN: (0, 80),

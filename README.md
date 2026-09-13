@@ -10,18 +10,27 @@
 
 ---
 
+## Overview
+
+Este repositorio contiene el desarrollo realizado por el equipo **Vortex** para la competencia **Candidates 2026**, correspondiente a los retos **Pista A (MAZE)** y **Pista B (Niveles)**.
+
+El proyecto utiliza una **Raspberry Pi y una cámara** para desarrollar un sistema de visión por computadora capaz de capturar y procesar imágenes, detectar colores y obtener información de los elementos presentes en la imagen.
+
+El sistema está siendo desarrollado utilizando **Python y OpenCV**, junto con herramientas de calibración y pruebas para facilitar su implementación durante la competencia.
+
+---
+
 ## Week 2
 
-Durante la primera semana se desarrolló la base del sistema de visión.
+Durante la segunda semana se desarrolló la base del sistema de visión.
 
 ### Completed
 
 * Configuración inicial del proyecto.
-* Preparación del entorno de desarrollo.
 * Pruebas de captura y procesamiento de imágenes con OpenCV.
 * Desarrollo de las funciones básicas para el manejo de la cámara.
 * Desarrollo de funciones para la detección de colores.
-* Implementación de detección mediante HSV y threshold.
+* Detección mediante HSV y threshold en escala de grises.
 * Desarrollo de funciones para la detección de objetos y obtención de sus coordenadas.
 * Creación de tests para comprobar las funciones de la cámara.
 * Desarrollo de herramientas de calibración para ROI y HSV.
@@ -32,17 +41,7 @@ Durante la primera semana se desarrolló la base del sistema de visión.
 * Probar las funciones de la cámara en la Raspberry Pi.
 * Crear una herramienta para calibrar los valores de threshold mediante trackbars.
 * Implementar la comunicación entre la Raspberry Pi y Arduino.
-* Implementar la lectura de sensores de distancia mediante Arduino.
-
----
-
-## Overview
-
-Este repositorio contiene el desarrollo realizado por el equipo **Vortex** para la competencia **Candidates 2026**, correspondiente a los retos **Pista A (MAZE)** y **Pista B (Niveles)**.
-
-El proyecto utiliza una **Raspberry Pi y una cámara** para desarrollar un sistema de visión por computadora capaz de capturar y procesar imágenes, detectar colores, y obtener información de los elementos presentes en la imagen.
-
-El sistema está siendo desarrollado utilizando **Python y OpenCV**, junto con herramientas de calibración y pruebas para facilitar su implementación durante la competencia.
+* Implementar la lectura de sensores de mediante Arduino.
 
 ---
 
@@ -56,7 +55,7 @@ La detección mediante HSV permite definir rangos de color y generar una máscar
 
 ### Threshold
 
-También se implementó detección mediante threshold para separar regiones de la imagen según sus valores de intensidad.
+También se implementó detección mediante threshold sobre imágenes en escala de grises, permitiendo separar regiones de la imagen según sus valores de intensidad.
 
 ---
 
@@ -100,8 +99,6 @@ Actualmente se han realizado pruebas para:
 
 * Raspberry Pi.
 * Cámara.
-* Arduino.
-
 
 ### Software
 
@@ -109,7 +106,6 @@ Actualmente se han realizado pruebas para:
 * Python.
 * OpenCV.
 * NumPy.
-* Git.
 
 ---
 
