@@ -23,8 +23,8 @@ def main():
         frame = camera.draw_color(frame, mask) # Dibujar contornos
 
         # Mostrar cámara
-        cv2.imshow("Color Detection", frame) # Mostrar cámara
-        cv2.imshow("Mask", mask) # Mostrar máscara 
+        cv2.imshow("Color Detection", frame)
+        cv2.imshow("Mask", mask) 
 
         if cv2.waitKey(1) & 0xFF == 27:
             break

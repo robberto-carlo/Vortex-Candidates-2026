@@ -65,35 +65,14 @@ def create_trackbars():
 
 
 def get_hsv_values():
-    h_min = cv2.getTrackbarPos(
-        "H Min",
-        "Trackbars"
-    )
+    h_min = cv2.getTrackbarPos("H Min","Trackbars")
+    h_max = cv2.getTrackbarPos("H Max","Trackbars")
 
-    h_max = cv2.getTrackbarPos(
-        "H Max",
-        "Trackbars"
-    )
+    s_min = cv2.getTrackbarPos("S Min","Trackbars")
+    s_max = cv2.getTrackbarPos("S Max","Trackbars")
 
-    s_min = cv2.getTrackbarPos(
-        "S Min",
-        "Trackbars"
-    )
-
-    s_max = cv2.getTrackbarPos(
-        "S Max",
-        "Trackbars"
-    )
-
-    v_min = cv2.getTrackbarPos(
-        "V Min",
-        "Trackbars"
-    )
-
-    v_max = cv2.getTrackbarPos(
-        "V Max",
-        "Trackbars"
-    )
+    v_min = cv2.getTrackbarPos("V Min","Trackbars")
+    v_max = cv2.getTrackbarPos("V Max","Trackbars")
 
     return (h_min,h_max,s_min,s_max,v_min,v_max)
 
@@ -102,7 +81,6 @@ def print_hsv_range(h_min,h_max,s_min,s_max,v_min,v_max):
     print("\nRango HSV actual:\n")
     print(f"(np.array([{h_min}, {s_min}, {v_min}]), "f"np.array([{h_max}, {s_max}, {v_max}]))\n")
 
-
 def main():
     cam = camera.open_camera(0)
     if cam is None:
@@ -110,7 +88,7 @@ def main():
 
     print("Cámara abierta correctamente\n")
     print("Controles:")
-    print("S   -> mostrar rango HSV")
+    print("P   -> mostrar rango HSV")
     print("ESC -> salir\n")
 
     create_trackbars()
@@ -178,12 +156,9 @@ def main():
         cv2.imshow("Mask",mask_display)
 
         key = cv2.waitKey(1) & 0xFF
-        # ESC -> salir
-        if key == 27:
+        if key == 27: # ESC -> salir
             break
-        # S -> imprimir rango HSV
-        elif key == ord("s"):
-
+        elif key == ord("p"): # S -> imprimir rango HSV
             print_hsv_range(h_min,h_max,s_min,s_max,v_min,v_max)
 
     camera.close_camera(cam)
