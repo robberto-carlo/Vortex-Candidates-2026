@@ -36,7 +36,7 @@ COLOR_RANGES_HSV = {
     ],
 
     Color.YELLOW: [
-        (np.array([20, 80, 80]), np.array([35, 255, 255]))
+        (np.array([0, 78, 88]), np.array([41, 255, 255]))
     ],
 
     Color.PINK: [
