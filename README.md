@@ -3,7 +3,9 @@
 <p align="center">
 
 <img src="https://img.shields.io/badge/Device-Raspberry%20Pi-red?style=for-the-badge">
+
 <img src="https://img.shields.io/badge/Language-Python-blue?style=for-the-badge">
+
 <img src="https://img.shields.io/badge/Vision%20System-OpenCV-green?style=for-the-badge">
 
 </p>
@@ -20,6 +22,44 @@ El sistema está siendo desarrollado utilizando **Python y OpenCV**, junto con h
 
 ---
 
+## Setup
+
+Para preparar la Raspberry Pi y ejecutar el proyecto, primero es necesario clonar el repositorio.
+
+### Clone Repository
+
+Desde la Raspberry Pi, ejecutar:
+
+```bash
+git clone https://github.com/robberto-carlo/Vortex-Candidates-2026.git
+```
+
+Entrar al repositorio:
+
+```bash
+cd Vortex-Candidates-2026
+```
+
+### Setup Script
+
+El proyecto incluye un script `setup.sh` dentro de la carpeta `raspberry/`, encargado de instalar las dependencias necesarias para ejecutar el sistema.
+
+Entrar a la carpeta `raspberry`:
+
+```bash
+cd raspberry
+```
+
+Ejecutar el script:
+
+```bash
+./setup.sh
+```
+
+Al finalizar, el script verifica las versiones instaladas de Python, OpenCV, NumPy y PySerial.
+
+---
+
 ## Week 2
 
 Durante la segunda semana se desarrolló la base del sistema de visión.
@@ -27,21 +67,20 @@ Durante la segunda semana se desarrolló la base del sistema de visión.
 ### Completed
 
 * Configuración inicial del proyecto.
+
 * Pruebas de captura y procesamiento de imágenes con OpenCV.
+
 * Desarrollo de las funciones básicas para el manejo de la cámara.
+
 * Desarrollo de funciones para la detección de colores.
+
 * Detección mediante HSV y threshold en escala de grises.
+
 * Desarrollo de funciones para la detección de objetos y obtención de sus coordenadas.
+
 * Creación de tests para comprobar las funciones de la cámara.
+
 * Desarrollo de herramientas de calibración para ROI y HSV.
-
-### Next Steps
-
-* Crear el entorno en la Raspberry Pi para utilizar el código.
-* Probar las funciones de la cámara en la Raspberry Pi.
-* Crear una herramienta para calibrar los valores de threshold mediante trackbars.
-* Implementar la comunicación entre la Raspberry Pi y Arduino.
-* Implementar la lectura de sensores de mediante Arduino.
 
 ---
 
@@ -106,6 +145,8 @@ Actualmente se han realizado pruebas para:
 * Python.
 * OpenCV.
 * NumPy.
+* PySerial.
+* Git.
 
 ---
 
