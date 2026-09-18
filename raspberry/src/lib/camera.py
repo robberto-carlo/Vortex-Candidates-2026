@@ -18,8 +18,23 @@ def close_camera(camera):
     camera.release()
     cv2.destroyAllWindows()
 
-def get_roi(frame, x1, y1, x2, y2):
+def get_roi(frame, roi):
+    coordinates = constants.ROI_COORDINATES[roi]
+    x1 = coordinates["x1"]
+    y1 = coordinates["y1"]
+    x2 = coordinates["x2"]
+    y2 = coordinates["y2"]
+
     return frame[y1:y2, x1:x2]
+
+def color_percentage(frame, color):
+    mask = hsv_mask(frame, color)
+
+    color_pixels = cv2.countNonZero(mask)
+    total_pixels = mask.size
+    percentage = (color_pixels / total_pixels) * 100
+
+    return percentage
 
 def camera_info(camera):
     width = int(camera.get(cv2.CAP_PROP_FRAME_WIDTH))

@@ -7,6 +7,30 @@ MIN_OBJECT_AREA = 500
 # Object detection
 MIN_COLOR_AREA = 500
 
+# Comunicacion Serial
+SERIAL_PORT = "/dev/ttyACM0" #"COM5"
+BAUDRATE = 9600
+
+class ROI(Enum):
+    FRONT = "front"
+    BACK = "back"
+
+# Cordenadas de ROIs
+ROI_COORDINATES = {
+    ROI.FRONT: {
+        "x1": 0,
+        "y1": 0,
+        "x2": 100,
+        "y2": 100
+    },
+    ROI.BACK: {
+        "x1": 0,
+        "y1": 0,
+        "x2": 150,
+        "y2": 150
+    }
+}
+
 class Color(Enum):
     RED = "red"
     GREEN = "green"
