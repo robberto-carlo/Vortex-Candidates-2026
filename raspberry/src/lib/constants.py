@@ -4,7 +4,7 @@ import numpy as np
 # Object detection
 MIN_OBJECT_AREA = 500
 
-# Object detection
+# Color detection
 MIN_COLOR_AREA = 500
 
 # Comunicacion Serial
@@ -14,6 +14,8 @@ BAUDRATE = 9600
 class ROI(Enum):
     FRONT = "front"
     BACK = "back"
+    NEXT_TILE_MAZE = "nextTileMaze"
+
 
 # Cordenadas de ROIs
 ROI_COORDINATES = {
@@ -28,6 +30,12 @@ ROI_COORDINATES = {
         "y1": 0,
         "x2": 150,
         "y2": 150
+    },
+    ROI.NEXT_TILE_MAZE: {
+        "x1": 0,
+        "y1": 0,
+        "x2": 200,
+        "y2": 200
     }
 }
 

@@ -122,6 +122,10 @@ def detect_dominant_color(frame):
 
     return best_color
 
+# Detectar ArUco
+def detect_aruco(frame):
+    pass
+
 # Display
 def draw_object(frame, obj):
     if obj is None:

@@ -25,6 +25,9 @@ class Communication:
         self.status = "ESPERANDO"
         self.initialized = False
         self.last_done = None # Cambiar a una lista
+        self.last_done_id = None
+        self.command_id = 0
+        self.waiting_id = None
 
         # Eventos
         self.done_event = threading.Event()
@@ -60,6 +63,10 @@ class Communication:
                 print(f"No se pudo conectar a {self.port}")
                 threading.Event().wait(0.5) # Esperar 0.5 segundos para volver a intentarlo
 
+    def _next_id(self):
+        self.command_id += 1
+        return self.command_id
+
     # Hilo para leer comunicacion Serial
     def _read_serial(self):
         while self.running:
@@ -91,9 +98,20 @@ class Communication:
                 # DONE - El Arduino termino la accion que se pidio
                 elif line.startswith("DONE|"):
                     parts = line.split("|")
-                    if len(parts) >= 2:
+
+                    if len(parts) != 3:
+                        print("DONE inválido")
+                        continue
+
+                    try:
+                        self.last_done_id = int(parts[2])
+                    except ValueError:
+                        print("ID de DONE inválido")
+                        continue
+
+                    if self.waiting_id == self.last_done_id:
                         self.last_done = parts[1] # Ultima accion que realizo
-                    self.done_event.set()
+                        self.done_event.set()
 
                 # SENSORES
                 elif line.startswith("SENSOR|"):
@@ -129,6 +147,8 @@ class Communication:
             "yaw": None
         }
         self.last_done = None
+        self.last_done_id = None
+        self.waiting_id = None
         self.done_event.clear()
         self.sensor_event.clear()
         self.ready = False
@@ -159,7 +179,10 @@ class Communication:
             return False
 
         try:
-            self.serial.write((command + "\n").encode("utf-8"))
+            command_id = self._next_id()
+            self.waiting_id = command_id
+            command_with_id = f"{command}|{command_id}"
+            self.serial.write((command_with_id + "\n").encode("utf-8"))
             self.serial.flush()
             return True
 
