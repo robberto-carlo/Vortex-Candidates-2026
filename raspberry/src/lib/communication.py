@@ -18,7 +18,8 @@ class Communication:
             "left": None,
             "back": None,
             "color": None,
-            "yaw": None
+            "yaw": None,
+            "pitch": None
         }
 
         self.ready = False
@@ -144,7 +145,8 @@ class Communication:
             "left": None,
             "back": None,
             "color": None,
-            "yaw": None
+            "yaw": None,
+            "pitch": None
         }
         self.last_done = None
         self.last_done_id = None
@@ -156,7 +158,7 @@ class Communication:
     # LEER SENSORES
     def _read_sensor_data(self, line):
         parts = line.split("|")
-        if len(parts) != 7: # Verificar que llego todos los datos
+        if len(parts) != 8: # Verificar que llego todos los datos
             return
 
         try: # Guardar valores de los sensores
@@ -166,7 +168,7 @@ class Communication:
             self.S["back"] = float(parts[4])
             self.S["color"] = parts[5]
             self.S["yaw"] = float(parts[6])
-
+            self.S["pitch"] = float(parts[7])
             self.sensor_event.set()
 
         except ValueError:

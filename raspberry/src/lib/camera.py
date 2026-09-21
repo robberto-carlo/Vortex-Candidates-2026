@@ -124,7 +124,16 @@ def detect_dominant_color(frame):
 
 # Detectar ArUco
 def detect_aruco(frame):
-    pass
+    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+
+    dictionary = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_50)
+    parameters = cv2.aruco.DetectorParameters()
+    detector = cv2.aruco.ArucoDetector(dictionary,parameters)
+    corners, ids, _ = detector.detectMarkers(gray)
+
+    if ids is None:
+        return None
+    return int(ids[0])
 
 # Display
 def draw_object(frame, obj):
