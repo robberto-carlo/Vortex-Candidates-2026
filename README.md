@@ -16,9 +16,9 @@
 
 Este repositorio contiene el desarrollo realizado por el equipo **Vortex** para la competencia **Candidates 2026**, correspondiente a los retos **Pista A (MAZE)** y **Pista B (Niveles)**.
 
-El proyecto utiliza una **Raspberry Pi y una cámara** para desarrollar un sistema de visión por computadora capaz de capturar y procesar imágenes, detectar colores y obtener información de los elementos presentes en la imagen.
+El proyecto utiliza una **Raspberry Pi, una cámara y un Arduino** para desarrollar el sistema de control del robot. La Raspberry Pi se encarga principalmente de la lógica, el procesamiento de información y el sistema de visión, mientras que el Arduino se encarga de ejecutar las acciones del robot y proporcionar información de los sensores.
 
-El sistema está siendo desarrollado utilizando **Python y OpenCV**, junto con herramientas de calibración y pruebas para facilitar su implementación durante la competencia.
+El sistema está siendo desarrollado utilizando **Python, OpenCV y comunicación serial entre la Raspberry Pi y el Arduino**, junto con herramientas de calibración y pruebas para facilitar su implementación durante la competencia.
 
 ---
 
@@ -67,20 +67,84 @@ Durante la segunda semana se desarrolló la base del sistema de visión.
 ### Completed
 
 * Configuración inicial del proyecto.
-
 * Pruebas de captura y procesamiento de imágenes con OpenCV.
-
 * Desarrollo de las funciones básicas para el manejo de la cámara.
-
 * Desarrollo de funciones para la detección de colores.
-
 * Detección mediante HSV y threshold en escala de grises.
-
 * Desarrollo de funciones para la detección de objetos y obtención de sus coordenadas.
-
 * Creación de tests para comprobar las funciones de la cámara.
-
 * Desarrollo de herramientas de calibración para ROI y HSV.
+
+---
+
+## Week 3
+
+Durante la tercera semana se continuó con el desarrollo e integración de los diferentes sistemas necesarios para el funcionamiento de la **Pista A (MAZE)**.
+
+### Completed
+
+* Configuración del entorno de desarrollo en la Raspberry Pi.
+* Instalación y verificación de las dependencias mediante el script `setup.sh`.
+* Implementación de la lógica principal para la Pista A (MAZE).
+* Implementación de la detección de marcadores ArUco.
+* Implementación de la comunicación serial entre Raspberry Pi y Arduino.
+* Organización de constantes y parámetros de configuración.
+
+---
+
+## Pista A - MAZE
+
+Se desarrolló la lógica principal para resolver el reto MAZE. La Raspberry Pi obtiene información de los sensores del robot y utiliza estos datos para determinar la siguiente dirección de movimiento.
+
+Se implementó una lógica basada en reglas de navegación que permite decidir entre las direcciones **RIGHT, FRONT, LEFT y BACK**. La prioridad de estas direcciones puede cambiar dependiendo de la regla de navegación utilizada.
+
+También se implementó el almacenamiento de la ruta recorrida, permitiendo utilizarla para el regreso del robot después de encontrar la condición de finalización del laberinto.
+
+## Vision System
+
+
+Se agregó la **detección de marcadores ArUco** utilizando OpenCV. Esto permite identificar los marcadores presentes en la pista y obtener su ID.
+
+También se integró la detección de ArUco con el procesamiento de cada tile del MAZE, permitiendo obtener información tanto del **color** como del **ArUco** detectado.
+
+El sistema utiliza varias capturas durante un intervalo de tiempo para obtener diferentes lecturas de la cámara y seleccionar la detección predominante. Esto ayuda a reducir errores producidos por detecciones momentáneas.
+
+--- 
+
+## Raspberry Pi - Arduino Communication
+
+Se completó la comunicación entre la **Raspberry Pi y el Arduino mediante comunicación serial**.
+
+La Raspberry Pi envía comandos al Arduino para controlar las acciones del robot y puede solicitar información de sus sensores.
+
+Entre los comandos implementados se encuentran:
+
+* `MOVE`
+* `TURN`
+* `GET_SENSOR`
+* `LCD`
+
+La comunicación utiliza identificadores de comandos para relacionar cada acción enviada con la respuesta correspondiente del Arduino.
+
+También se implementó el manejo de diferentes estados de comunicación, incluyendo la conexión inicial, la pérdida de comunicación y el reinicio del Arduino.
+
+---
+
+### Constants and Configuration
+
+Se agregaron y organizaron constantes para facilitar la configuración del sistema y evitar valores definidos directamente dentro de las funciones.
+
+Entre los parámetros configurables se encuentran:
+
+* Distancias utilizadas para determinar si un camino está libre.
+* Distancia de movimiento por tile.
+* Grados de giro.
+* Tiempo de captura de la cámara.
+* Regla inicial de navegación.
+* Coordenadas de las ROI.
+* Rangos HSV.
+* Rangos de threshold.
+* Áreas mínimas para detección.
 
 ---
 
@@ -96,6 +160,24 @@ La detección mediante HSV permite definir rangos de color y generar una máscar
 
 También se implementó detección mediante threshold sobre imágenes en escala de grises, permitiendo separar regiones de la imagen según sus valores de intensidad.
 
+### Dominant Color
+
+Se implementó una función para determinar el color predominante dentro de una imagen o ROI. La función compara las áreas detectadas para cada color y selecciona el color con mayor presencia.
+
+---
+
+## ArUco Detection
+
+Se implementó la detección de marcadores **ArUco** mediante OpenCV.
+
+El sistema utiliza el diccionario:
+
+```text
+DICT_4X4_50
+```
+
+Para reducir posibles detecciones incorrectas o momentáneas, el sistema realiza múltiples lecturas durante un periodo determinado y selecciona el ID que aparece con mayor frecuencia.
+
 ---
 
 ## Calibration
@@ -105,6 +187,8 @@ El proyecto incluye herramientas para calibrar los parámetros utilizados por el
 ### ROI Calibration
 
 Permite seleccionar una **Region of Interest (ROI)** directamente sobre la imagen de la cámara.
+
+Las ROI se almacenan como constantes para poder reutilizarlas en las diferentes partes del programa.
 
 ### HSV Calibration
 
@@ -126,9 +210,9 @@ Actualmente se han realizado pruebas para:
 
 * Cámara.
 * Detección de colores.
-* Threshold.
 * Detección de objetos.
 * Detección del color dominante.
+* Detección de ArUco.
 
 ---
 
@@ -138,6 +222,7 @@ Actualmente se han realizado pruebas para:
 
 * Raspberry Pi.
 * Cámara.
+* Arduino.
 
 ### Software
 
