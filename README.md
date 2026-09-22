@@ -1,6 +1,10 @@
 # Vortex-Candidates-2026
 
 <p align="center">
+  <img src="assets/images/Vortex-X.jpeg" width="500">
+</p>
+
+<p align="center">
 
 <img src="https://img.shields.io/badge/Device-Raspberry%20Pi-red?style=for-the-badge">
 
