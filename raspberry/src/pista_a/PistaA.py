@@ -96,6 +96,8 @@ def invert_direction(direction):
 
 # EJECUTAR DECISION
 def execute_direction(communication, direction, camera):
+    next_color = None
+    next_aruco = None
     if direction == "FRONT":
         next_color,next_aruco = get_next_tile_info(camera)
         move_front(communication)
@@ -139,7 +141,8 @@ def get_next_tile_info(camera):
 
         aruco = detect_aruco(frame)
         if aruco is not None:
-            arucos.append(aruco)
+            aruco_id,_ = aruco
+            arucos.append(aruco_id)
 
         if debug:
             cv2.imshow("Camera", frame)

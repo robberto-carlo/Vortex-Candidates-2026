@@ -64,6 +64,10 @@ Al finalizar, el script verifica las versiones instaladas de Python, OpenCV, Num
 
 Durante la segunda semana se desarrolló la base del sistema de visión.
 
+<p align="center">
+  <img src="assets/images/DetecciónDeObjetos.jpeg" width="700">
+</p>
+
 ### Completed
 
 * Configuración inicial del proyecto.
@@ -80,6 +84,10 @@ Durante la segunda semana se desarrolló la base del sistema de visión.
 ## Week 3
 
 Durante la tercera semana se continuó con el desarrollo e integración de los diferentes sistemas necesarios para el funcionamiento de la **Pista A (MAZE)**.
+
+<p align="center">
+  <img src="assets/images/DetecciónDeArUco.jpeg" width="700">
+</p>
 
 ### Completed
 
@@ -130,7 +138,7 @@ También se implementó el manejo de diferentes estados de comunicación, incluy
 
 ---
 
-### Constants and Configuration
+## Constants and Configuration
 
 Se agregaron y organizaron constantes para facilitar la configuración del sistema y evitar valores definidos directamente dentro de las funciones.
 
@@ -140,7 +148,6 @@ Entre los parámetros configurables se encuentran:
 * Distancia de movimiento por tile.
 * Grados de giro.
 * Tiempo de captura de la cámara.
-* Regla inicial de navegación.
 * Coordenadas de las ROI.
 * Rangos HSV.
 * Rangos de threshold.
@@ -159,10 +166,6 @@ La detección mediante HSV permite definir rangos de color y generar una máscar
 ### Threshold
 
 También se implementó detección mediante threshold sobre imágenes en escala de grises, permitiendo separar regiones de la imagen según sus valores de intensidad.
-
-### Dominant Color
-
-Se implementó una función para determinar el color predominante dentro de una imagen o ROI. La función compara las áreas detectadas para cada color y selecciona el color con mayor presencia.
 
 ---
 

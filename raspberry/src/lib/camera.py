@@ -133,7 +133,7 @@ def detect_aruco(frame):
 
     if ids is None:
         return None
-    return int(ids[0])
+    return int(ids[0]), corners[0]
 
 # Display
 def draw_object(frame, obj):
