@@ -13,7 +13,7 @@ from lib.camera import (
     detect_aruco,
     close_camera)
 
-cmTile = 30
+direccionTile = 1
 turnDegrees = 90
 freeDistance = 20
 cameraTime = 0.3
@@ -21,8 +21,8 @@ initialRightHand = True
 debug = True
 
 # MOVIMIENTOS
-def move_front(communication, cm=cmTile):
-    if not communication.send(f"MOVE|{cm}"):
+def move_front(communication, direccion=direccionTile):
+    if not communication.send(f"MOVE|{direccion}"):
         raise ArduinoRestarted("Se perdió la comunicación con Arduino")
 
     return communication.wait_done()
@@ -66,7 +66,11 @@ def right_is_free(sensors, distance=freeDistance):
 def left_is_free(sensors, distance=freeDistance):
     return sensors["left"] is not None and sensors["left"] > distance
 
+def is_red_sensor(sensors):
+    return sensors["color"] if sensors["color"] == "RED" else None
 
+def is_green_sensor(sensors):
+    return sensors["color"] if sensors["color"] == "GREEN" else None
 # DECISIONES
 def decide_direction(sensors, currentRightHand):
     if currentRightHand:
@@ -180,7 +184,7 @@ def solve_maze(communication):
             print("Dirección:", "FRONT")
         
         next_color,next_aruco = execute_direction(communication,"FRONT",camera)
-        communication.send(f"LCD|{next_color}|{next_aruco}")
+        send_lcd(communication, next_color, next_aruco)
         tile += 1
         
         while True:
@@ -214,12 +218,16 @@ def solve_maze(communication):
             if debug:
                 print("Dirección:", direction)
             next_color, next_aruco = execute_direction(communication,direction,camera)
-            communication.send(f"LCD|{next_color}|{next_aruco}")
+            send_lcd(communication, next_color, next_aruco)
             tile += 1
 
     finally:
         close_camera(camera)
 
+def send_lcd(communication, color, aruco):
+    color_text = color.name if color is not None else ""
+    aruco_text = str(aruco) if aruco is not None else ""
+    communication.send(f"LCD|{color_text}|{aruco_text}")
 
 # MAIN
 def main():
