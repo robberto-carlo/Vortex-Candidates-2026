@@ -6,7 +6,7 @@
 #include <VL53L0X.h>
 
 // Cantidad de VL53L0X usados (True = 7 / False = 6)
-const bool USE_7_SENSORS = false;
+const bool USE_7_SENSORS = true;
 
 LiquidCrystal_I2C lcd(0x27, 16, 2);
 MPU6050 mpu;

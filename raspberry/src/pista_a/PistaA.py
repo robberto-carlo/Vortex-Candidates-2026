@@ -19,6 +19,7 @@ freeDistance = 20 * 10 #cm para considerar pared * 10 (mm a cm)
 cameraTime = 0.3 # 0.5
 initialRightHand = True
 debug = True
+showCamera = True
 
 # MOVIMIENTOS
 def move_front(communication, direccion=direccionTile):
@@ -49,7 +50,6 @@ def turn_back(communication, direction="R"):
 
     return communication.wait_done()
 
-
 # SENSORES
 def get_sensors(communication):
     sensors = communication.request_sensors()
@@ -71,6 +71,7 @@ def is_red_sensor(sensors):
 
 def is_green_sensor(sensors):
     return sensors["color"] if sensors["color"] == "GREEN" else None
+
 # DECISIONES
 def decide_direction(sensors, currentRightHand):
     if currentRightHand:
@@ -89,14 +90,6 @@ def decide_direction(sensors, currentRightHand):
         if right_is_free(sensors):
             return "RIGHT"
         return "BACK"
-
-def invert_direction(direction):
-    if direction == "RIGHT":
-        return "LEFT"
-    if direction == "LEFT":
-        return "RIGHT"
-    return direction
-
 
 # EJECUTAR DECISION
 def execute_direction(communication, direction, camera):
@@ -148,7 +141,7 @@ def get_next_tile_info(camera):
             aruco_id, corners = aruco
             arucos.append(aruco_id)
 
-            if debug:
+            if showCamera:
                 corners_int = corners.astype(int)
                 cv2.polylines(
                     frame,
@@ -166,8 +159,8 @@ def get_next_tile_info(camera):
                     (0, 255, 0),
                     2)
 
-        if debug:
-            roi_coords = constants.ROI_COORDINATES["nextTileMaze"]
+        if showCamera:
+            roi_coords = constants.ROI_COORDINATES[constants.ROI.NEXT_TILE_MAZE]
             x1 = roi_coords["x1"]
             y1 = roi_coords["y1"]
             x2 = roi_coords["x2"]
@@ -178,7 +171,7 @@ def get_next_tile_info(camera):
                 (x1, y1),
                 (x2, y2),
                 (255, 0, 0),
-                1)
+                2)
             cv2.imshow("Camera", frame)
 
             if cv2.waitKey(1) & 0xFF == ord("q"):
@@ -203,11 +196,14 @@ def solve_maze(communication):
     camera = open_camera(0)
     if camera is None:
             raise RuntimeError("No se pudo abrir la cámara")
+    for _ in range(30): # Esperar los primeros 30 frames
+        read_frame(camera)
 
     try:
         tile = 1
         currentRightHand = initialRightHand
-        route = []
+        green_count = 0
+        isFinalMode = False
 
         if debug:
             print("Tile:", tile)
@@ -227,24 +223,31 @@ def solve_maze(communication):
 
             if next_color == constants.Color.RED:
                 if debug:
-                    print("Final:", route)
+                    print("Llegaste al final")
+                    print("Regresando")
 
                 turn_back(communication)
                 move_front(communication)
 
-                for direction in reversed(route): # Hacer los movimientos pero inversos
-                    if debug:
-                        print("Regresando:", direction)
-                    execute_direction(communication,direction,camera)
-                break
+                currentRightHand = not currentRightHand
+                isFinalMode = True
+                continue  
 
             if next_color == constants.Color.GREEN: # Next color es Verde
-                if debug:
-                    print("Cambio de regal de mano")
+                if(isFinalMode):
+                    if(green_count>0):
+                        green_count -= 1
+                    else:
+                        if debug:
+                            print("Rregesaste al principio")
+                        break # Terminar codigo
+                else:
+                    green_count += 1
+                    if debug:
+                        print("Cambio de regal de mano")
                 currentRightHand = not currentRightHand
 
             direction = decide_direction(sensors, currentRightHand)
-            route.append(invert_direction(direction))
             if debug:
                 print("Dirección:", direction)
             next_color, next_aruco = execute_direction(communication,direction,camera)

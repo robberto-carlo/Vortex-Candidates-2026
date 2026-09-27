@@ -1,10 +1,6 @@
 # Vortex-Candidates-2026
 
 <p align="center">
-  <img src="assets/images/Vortex-X.jpeg" width="500">
-</p>
-
-<p align="center">
 
 <img src="https://img.shields.io/badge/Device-Raspberry%20Pi-red?style=for-the-badge">
 
@@ -101,6 +97,20 @@ Durante la tercera semana se continuó con el desarrollo e integración de los d
 * Implementación de la detección de marcadores ArUco.
 * Implementación de la comunicación serial entre Raspberry Pi y Arduino.
 * Organización de constantes y parámetros de configuración.
+
+---
+
+## Week 4
+
+Durante la cuarta semana se realizaron las primeras pruebas de integración del sistema completo para la Pista A (MAZE), conectando la Raspberry Pi, el Arduino, la cámara y los sensores del robot.
+
+### Completed
+
+* Verificación del funcionamiento de todos los sensores.
+* Creación del código del Arduino.
+* Implementación de las funciones de movimiento del robot en el Arduino.
+* Primeras pruebas de integración entre Raspberry Pi y Arduino para MAZE.
+* Implementación inicial de la lógica de regreso después de detectar el tile Rojo.
 
 ---
 
