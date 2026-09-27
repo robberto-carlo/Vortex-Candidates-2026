@@ -15,7 +15,7 @@ from lib.camera import (
 
 direccionTile = 1
 turnDegrees = 90
-freeDistance = 20
+freeDistance = 20 * 10 # cm para considerar pared * 10(de mm a cm)
 cameraTime = 0.3
 initialRightHand = True
 debug = True

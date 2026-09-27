@@ -3,13 +3,20 @@
 #include <MPU6050.h>
 #include <LiquidCrystal_I2C.h>
 #include <Adafruit_TCS34725.h>
+#include <VL53L0X.h>
+
+// Cantidad de VL53L0X usados (True = 7 / False = 6)
+const bool USE_7_SENSORS = false;
 
 LiquidCrystal_I2C lcd(0x27, 16, 2);
 MPU6050 mpu;
-Adafruit_TCS34725 tcs = Adafruit_TCS34725(
-  TCS34725_INTEGRATIONTIME_50MS,
-  TCS34725_GAIN_4X
-);
+Adafruit_TCS34725 tcs = Adafruit_TCS34725(TCS34725_INTEGRATIONTIME_50MS,TCS34725_GAIN_4X);
+const uint8_t xshutPins[7] = {34, 36, 38, 40, 42, 44, 46};
+const uint8_t sensorAddresses[7] = {0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36};
+const uint8_t NUM_SENSORS = USE_7_SENSORS ? 7 : 6;
+VL53L0X sensors[7];
+int distancias[7];
+
 // Motores Intake
 const int intakePin1 = 10;
 const int intakePin2 = 11;
@@ -44,8 +51,16 @@ float currentYaw = 0;
 unsigned long lastTime = 0;
 float gyroZoffset = 0;
 
-float Kp = 25.0; // Fuerza de corrección
-float KpSwipe = 8.0;
+// Variables de distancias de los VL53L0X
+int sensorFront = 0;
+int sensorRight = 0;
+int sensorLeft = 0;
+int sensorBack = 0;
+int sensorDown = 0;
+
+// PID
+const float Kp = 25.0;
+const float KpSwipe = 8.0;
 
 // Velocidades base
 int baseFR = 180;
@@ -61,10 +76,32 @@ const int serialInterval = 100;
 
 int lastDirection = 0; 
 
+// Constantes
+const int PULSOS_NORMAL = 971; 
+const int PULSOS_OMNI = 971; 
+
 void setup() {
   Serial.begin(9600);
   Wire.begin();
   
+  // Inicializar VL53L0X
+  for (int i = 0; i < NUM_SENSORS; i++) {
+    pinMode(xshutPins[i], OUTPUT);
+    digitalWrite(xshutPins[i], LOW);
+  }
+  delay(10);
+  for (int i = 0; i < NUM_SENSORS; i++) {
+    digitalWrite(xshutPins[i], HIGH);
+    delay(10);
+    if (!sensors[i].init()) {
+      Serial.print("ERROR|VL53L0X|S");
+      Serial.println(i + 1);
+      while (1);
+    }
+    sensors[i].setAddress(sensorAddresses[i]);
+    sensors[i].startContinuous();
+  }
+
   // Inicializar LCD
   lcd.init();                     
   lcd.backlight();
@@ -80,12 +117,13 @@ void setup() {
     while (1);
   }
 
+  /*
   if (!tcs.begin()) {
     lcd.clear();
     lcd.print("Error TCS34725");
     Serial.println("ERROR|TCS34725");
     while (1);
-  }
+  }*/
 
   // Configurar pines de motores
   pinMode(motFR1, OUTPUT); pinMode(motFR2, OUTPUT);
@@ -115,9 +153,8 @@ void setup() {
   // Calibrar el giroscopio
   calibrarGyro();
 
-  // Establecer la posición actual como el CERO absoluto
   lcd.clear();
-  lcd.print("Seteando Cero...");
+  lcd.print("Vortex-X");
   delay(1000); 
   
   currentYaw = 0;    
@@ -149,6 +186,9 @@ void reiniciarEncoders() {
 // LOOP PRINCIPAL
 void loop() {
   actualizarYaw();
+  actualizarDistancias();
+
+
   if (!Serial.available()) {
     return;
   }
@@ -176,14 +216,59 @@ void loop() {
 
     if (direccion == 1) {
       Serial.println("MOVIENDO ADELANTE");
-      avanzarPulsos(971, 1);
+      avanzarPulsos(PULSOS_NORMAL, 1);
 
       Serial.print("DONE|MOVE|");
       Serial.println(id);
     }
     else if (direccion == -1) {
       Serial.println("MOVIENDO ATRAS");
-      avanzarPulsos(971, -1);
+      avanzarPulsos(PULSOS_NORMAL, -1);
+
+      Serial.print("DONE|MOVE|");
+      Serial.println(id);
+    }
+    else{
+      Serial.println("ERROR|MOVE_DIRECTION");
+    }
+  }
+
+  // MOVE_OMNI|DIRECCION|ID
+  else if (comando.startsWith("MOVE_OMNI|")) {
+    int p1 = comando.indexOf('|');
+    int p2 = comando.indexOf('|', p1 + 1);
+    if (p2 == -1) {
+      Serial.println("ERROR|MOVE_FORMAT");
+      return;
+    }
+
+    int direccion = comando.substring(p1 + 1, p2).toInt();
+    int id = comando.substring(p2 + 1).toInt();
+
+    if (direccion == 1) {
+      Serial.println("MOVIENDO OMNI ADELANTE");
+      avanzarPulsos(PULSOS_OMNI, 1);
+
+      Serial.print("DONE|MOVE|");
+      Serial.println(id);
+    }
+    else if (direccion == -1) {
+      Serial.println("MOVIENDO OMNI ATRAS");
+      avanzarPulsos(PULSOS_OMNI, -1);
+
+      Serial.print("DONE|MOVE|");
+      Serial.println(id);
+    }
+    else if (direccion == 2){ // Mover a la derecha
+      Serial.println("MOVIENDO OMNI DERECHA");
+      swipeRight(180); // Velocidad de las llantas
+
+      Serial.print("DONE|MOVE|");
+      Serial.println(id);
+    }
+    else if (direccion == 3){ // Mover a la izquierda
+      Serial.println("MOVIENDO OMNI IZQUIERDA");
+      swipeLeft(180); // Velocidad de las llantas
 
       Serial.print("DONE|MOVE|");
       Serial.println(id);
@@ -492,28 +577,40 @@ void girar2(float anguloObjetivo) {
 void parar() {
   actualizarYaw();
 
-  if (lastDirection == 1) {
+  if (lastDirection == 1) { // Adelante
     digitalWrite(motFR1, LOW);  digitalWrite(motFR2, HIGH);
     digitalWrite(motFL1, LOW);  digitalWrite(motFL2, HIGH);
     digitalWrite(motBR1, LOW);  digitalWrite(motBR2, HIGH);
     digitalWrite(motBL1, LOW);  digitalWrite(motBL2, HIGH);
   } 
-  else if (lastDirection == -1) {
+  else if (lastDirection == -1) { // Atras
     digitalWrite(motFR1, HIGH); digitalWrite(motFR2, LOW);
     digitalWrite(motFL1, HIGH); digitalWrite(motFL2, LOW);
     digitalWrite(motBR1, HIGH); digitalWrite(motBR2, LOW);
     digitalWrite(motBL1, HIGH); digitalWrite(motBL2, LOW);
   }
-  else if (lastDirection == 2) {
+  else if (lastDirection == 2) { // Giro derecha
     digitalWrite(motFR1, LOW);  digitalWrite(motFR2, HIGH);
     digitalWrite(motBR1, LOW);  digitalWrite(motBR2, HIGH);
     digitalWrite(motFL1, HIGH); digitalWrite(motFL2, LOW);
     digitalWrite(motBL1, HIGH); digitalWrite(motBL2, LOW);
   }
-  else if (lastDirection == 3) {
+  else if (lastDirection == 3) { // Giro izquierda
     digitalWrite(motFR1, HIGH); digitalWrite(motFR2, LOW);
     digitalWrite(motBR1, HIGH); digitalWrite(motBR2, LOW);
     digitalWrite(motFL1, LOW);  digitalWrite(motFL2, HIGH);
+    digitalWrite(motBL1, LOW);  digitalWrite(motBL2, HIGH);
+  }
+  else if (lastDirection == 4) { // Swipe derecha
+    digitalWrite(motFR1, HIGH); digitalWrite(motFR2, LOW);
+    digitalWrite(motFL1, LOW);  digitalWrite(motFL2, HIGH);
+    digitalWrite(motBR1, LOW);  digitalWrite(motBR2, HIGH);
+    digitalWrite(motBL1, HIGH); digitalWrite(motBL2, LOW);
+  }
+  else if (lastDirection == 5) { // Swipe izquierda
+    digitalWrite(motFR1, LOW);  digitalWrite(motFR2, HIGH);
+    digitalWrite(motFL1, HIGH); digitalWrite(motFL2, LOW);
+    digitalWrite(motBR1, HIGH); digitalWrite(motBR2, LOW);
     digitalWrite(motBL1, LOW);  digitalWrite(motBL2, HIGH);
   }
 
@@ -565,6 +662,7 @@ void moverAtras(int fr, int fl, int br, int bl) {
 
 // Funciones de Movimientos con ruedas mecanum
 void swipeLeft(int velocidad) {
+  lastDirection = 5;
   actualizarYaw();
   float error = targetYaw - currentYaw;
   int ajuste = KpSwipe * error;
@@ -587,6 +685,7 @@ void swipeLeft(int velocidad) {
 }
 
 void swipeRight(int velocidad) {
+  lastDirection = 4;
   actualizarYaw();
   float error = targetYaw - currentYaw;
   int ajuste = KpSwipe * error;
@@ -642,6 +741,19 @@ void establecerCeroYaw() {
   targetYaw = 0;
 }
 
+float obtenerPitch() {
+  int16_t ax, ay, az;
+  int16_t gx, gy, gz;
+  mpu.getMotion6(&ax, &ay, &az, &gx, &gy, &gz);
+
+  float pitch = atan2(
+    ax,
+    sqrt((float)ay * ay + (float)az * az)
+  ) * 180.0 / PI;
+
+  return pitch * -1;
+}
+
 // Funcion detectar colores
 String detectarColor() {
   uint16_t r, g, b, c;
@@ -666,25 +778,25 @@ String detectarColor() {
 void enviarSensores() {
   actualizarYaw();
   String color = detectarColor();
-  // Por ahora los sensores de distancia están en 0
+  float pitch = obtenerPitch();
 
   Serial.print("SENSOR|");
 
-  Serial.print(0);           // front
+  Serial.print(sensorFront);           // front
   Serial.print("|");
-  Serial.print(0);           // right
+  Serial.print(sensorRight);           // right
   Serial.print("|");
-  Serial.print(0);           // left
+  Serial.print(sensorLeft);           // left
   Serial.print("|");
-  Serial.print(0);           // back
+  Serial.print(sensorBack);           // back
   Serial.print("|");
-  Serial.print(0);           // down
+  Serial.print(sensorDown);           // down
   Serial.print("|");
   Serial.print(color);       // color
   Serial.print("|");
   Serial.print(currentYaw);  // yaw
   Serial.print("|");
-  Serial.println(0);         // pitch
+  Serial.println(pitch);         // pitch
 }
 
 // Funciones del Intake
@@ -705,4 +817,21 @@ void intakeOn(int direccion){
 void intakeOff(){
   digitalWrite(intakePin1, HIGH);
   digitalWrite(intakePin2, HIGH);
+}
+
+void actualizarDistancias() {
+  // Leer los sensores
+  for (int i = 0; i < NUM_SENSORS; i++) {
+    distancias[i] = sensors[i].readRangeContinuousMillimeters();
+  }
+  // Guardar valores de los sensores
+  sensorFront = distancias[0]; // S1 = Frente
+  sensorRight = (distancias[1] + distancias[2]) / 2; // S2 + S3 = Derecha
+  sensorBack = distancias[3]; // S4 = Atrás
+  sensorLeft = (distancias[4] + distancias[5]) / 2; // S5 + S6 = Izquierda
+  if (NUM_SENSORS >= 7) { // S7 = Abajo
+    sensorDown = distancias[6];
+  } else {
+    sensorDown = 0;
+  }
 }

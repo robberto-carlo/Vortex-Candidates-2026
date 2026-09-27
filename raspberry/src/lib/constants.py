@@ -56,23 +56,23 @@ COLOR_RANGES_HSV = {
     ],
 
     Color.GREEN: [
-        (np.array([35, 60, 60]), np.array([85, 255, 255]))
+        (np.array([33, 87, 59]), np.array([79, 255, 163]))
     ],
 
     Color.BLUE: [
-        (np.array([90, 80, 50]), np.array([130, 255, 255]))
+        (np.array([75, 87, 59]), np.array([122, 255, 163]))
     ],
 
     Color.ORANGE: [
-        (np.array([10, 100, 100]), np.array([20, 255, 255]))
+        (np.array([0, 141, 132]), np.array([15, 255, 255]))
     ],
 
     Color.YELLOW: [
-        (np.array([0, 78, 88]), np.array([41, 255, 255]))
+        (np.array([0, 50, 194]), np.array([49, 255, 255]))
     ],
 
     Color.PINK: [
-        (np.array([140, 50, 50]), np.array([170, 255, 255]))
+        (np.array([0, 50, 194]), np.array([179, 255, 255]))
     ],
 
     Color.WHITE: [
