@@ -16,8 +16,7 @@ from lib.camera import (
 direccionTile = 1
 turnDegrees = 90
 freeDistance = 20 * 10 #cm para considerar pared * 10 (mm a cm)
-cameraTime = 0.5
-ARUCO_MIN_DETECTIONS = 3
+cameraTime = 0.3 # 0.5
 initialRightHand = True
 debug = True
 
@@ -131,8 +130,8 @@ def execute_direction(communication, direction, camera):
 # CAMARA
 def get_next_tile_info(camera):
     start_time = time.time()
-    colors_detections = []
-    aruco_detections = {}
+    colors = []
+    arucos = []
 
     while time.time() - start_time < cameraTime:
         frame = read_frame(camera)
@@ -142,32 +141,56 @@ def get_next_tile_info(camera):
 
         color = detect_dominant_color(roi)
         if color is not None and color != constants.Color.WHITE:
-            colors_detections.append(color)
+            colors.append(color)
 
         aruco = detect_aruco(frame)
         if aruco is not None:
-            aruco_id,_ = aruco
-            aruco_detections[aruco_id] = (aruco_detections.get(aruco_id, 0) + 1)
+            aruco_id, corners = aruco
+            arucos.append(aruco_id)
+
+            if debug:
+                corners_int = corners.astype(int)
+                cv2.polylines(
+                    frame,
+                    [corners_int],
+                    True,
+                    (0, 255, 0),
+                    2)
+                x, y = corners_int[0][0]
+                cv2.putText(
+                    frame,
+                    f"ArUco: {aruco_id}",
+                    (x, y - 10),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    0.6,
+                    (0, 255, 0),
+                    2)
 
         if debug:
+            roi_coords = constants.ROI_COORDINATES["nextTileMaze"]
+            x1 = roi_coords["x1"]
+            y1 = roi_coords["y1"]
+            x2 = roi_coords["x2"]
+            y2 = roi_coords["y2"]
+
+            cv2.rectangle(
+                frame,
+                (x1, y1),
+                (x2, y2),
+                (255, 0, 0),
+                1)
             cv2.imshow("Camera", frame)
 
             if cv2.waitKey(1) & 0xFF == ord("q"):
                 break
 
-    if colors_detections:
-        dominant_color = max(set(colors_detections), key=colors_detections.count) # Color más detectado
+    if colors:
+        dominant_color = max(set(colors), key=colors.count) # Color más detectado
     else:
         dominant_color = None
 
-    valid_arucos = {
-        aruco_id: count
-        for aruco_id, count in aruco_detections.items()
-        if count >= ARUCO_MIN_DETECTIONS
-    }
-    
-    if valid_arucos:
-        detected_aruco = max(set(valid_arucos), key=valid_arucos.count) # ArUco más detectado
+    if arucos:
+        detected_aruco = max(set(arucos), key=arucos.count) # ArUco más detectado
     else:
         detected_aruco = None
 

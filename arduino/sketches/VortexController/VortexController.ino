@@ -365,17 +365,20 @@ void loop() {
     enviarSensores();
   }
 
-  // LCD|COLOR|ARUCO
+  // LCD|COLOR|ARUCO|ID
   else if (comando.startsWith("LCD|")) {
     int p1 = comando.indexOf('|');
     int p2 = comando.indexOf('|', p1 + 1);
-    if (p2 == -1) {
+    int p3 = comando.indexOf('|', p2 + 1);
+
+    if (p3 == -1) {
       Serial.println("ERROR|LCD_FORMAT");
       return;
     }
 
     String color = comando.substring(p1 + 1, p2);
-    String aruco = comando.substring(p2 + 1);
+    String aruco = comando.substring(p2 + 1, p3);
+
 
     lcd.clear();
     if (color.length() > 0) { // Primera línea
