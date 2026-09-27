@@ -15,8 +15,9 @@ from lib.camera import (
 
 direccionTile = 1
 turnDegrees = 90
-freeDistance = 20 * 10 # cm para considerar pared * 10(de mm a cm)
-cameraTime = 0.3
+freeDistance = 20 * 10 #cm para considerar pared * 10 (mm a cm)
+cameraTime = 0.5
+ARUCO_MIN_DETECTIONS = 3
 initialRightHand = True
 debug = True
 
@@ -130,8 +131,8 @@ def execute_direction(communication, direction, camera):
 # CAMARA
 def get_next_tile_info(camera):
     start_time = time.time()
-    colors = []
-    arucos = []
+    colors_detections = []
+    aruco_detections = {}
 
     while time.time() - start_time < cameraTime:
         frame = read_frame(camera)
@@ -141,12 +142,12 @@ def get_next_tile_info(camera):
 
         color = detect_dominant_color(roi)
         if color is not None and color != constants.Color.WHITE:
-            colors.append(color)
+            colors_detections.append(color)
 
         aruco = detect_aruco(frame)
         if aruco is not None:
             aruco_id,_ = aruco
-            arucos.append(aruco_id)
+            aruco_detections[aruco_id] = (aruco_detections.get(aruco_id, 0) + 1)
 
         if debug:
             cv2.imshow("Camera", frame)
@@ -154,13 +155,19 @@ def get_next_tile_info(camera):
             if cv2.waitKey(1) & 0xFF == ord("q"):
                 break
 
-    if colors:
-        dominant_color = max(set(colors), key=colors.count) # Color más detectado
+    if colors_detections:
+        dominant_color = max(set(colors_detections), key=colors_detections.count) # Color más detectado
     else:
         dominant_color = None
 
-    if arucos:
-        detected_aruco = max(set(arucos), key=arucos.count) # ArUco más detectado
+    valid_arucos = {
+        aruco_id: count
+        for aruco_id, count in aruco_detections.items()
+        if count >= ARUCO_MIN_DETECTIONS
+    }
+    
+    if valid_arucos:
+        detected_aruco = max(set(valid_arucos), key=valid_arucos.count) # ArUco más detectado
     else:
         detected_aruco = None
 

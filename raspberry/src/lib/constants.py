@@ -8,7 +8,7 @@ MIN_OBJECT_AREA = 500
 MIN_COLOR_AREA = 500
 
 # Comunicacion Serial
-SERIAL_PORT = "/dev/ttyACM0" #"COM5"
+SERIAL_PORT = "/dev/ttyUSB0" #"COM5"
 BAUDRATE = 9600
 
 class ROI(Enum):
@@ -33,9 +33,9 @@ ROI_COORDINATES = {
     },
     ROI.NEXT_TILE_MAZE: {
         "x1": 0,
-        "y1": 0,
-        "x2": 200,
-        "y2": 200
+        "y1": 250,
+        "x2": 640,
+        "y2": 480
     }
 }
 

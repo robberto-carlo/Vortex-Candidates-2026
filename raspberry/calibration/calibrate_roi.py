@@ -95,7 +95,7 @@ def main():
                 x, y, w, h = roi
                 x1, y1, x2, y2 = print_roi(x,y,w,h)
 
-                selected_frame = camera.get_roi(frame,x1,y1,x2,y2)
+                selected_frame = camera.get_new_roi(frame,x1,y1,x2,y2)
 
                 cv2.imshow("ROI seleccionado",selected_frame)
 

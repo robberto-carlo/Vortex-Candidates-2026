@@ -27,6 +27,9 @@ def get_roi(frame, roi):
 
     return frame[y1:y2, x1:x2]
 
+def get_new_roi(frame, x1, y1, x2, y2):
+    return frame[y1:y2, x1:x2]
+
 def color_percentage(frame, color):
     mask = hsv_mask(frame, color)
 
