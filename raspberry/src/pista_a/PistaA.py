@@ -232,7 +232,7 @@ def send_lcd(communication, color, aruco):
 # MAIN
 def main():
     while True:
-        communication = Communication(port="COM6",baudrate=9600)
+        communication = Communication(port="/dev/ttyUSB0",baudrate=9600)
 
         try:
             print("Esperando Arduino...")
