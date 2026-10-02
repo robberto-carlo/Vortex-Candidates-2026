@@ -58,6 +58,15 @@ def hsv_mask(frame, color):
 
     return mask
 
+def hsv_mask_custom(frame, hsv_ranges):
+    hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+    mask = np.zeros(hsv.shape[:2], dtype=np.uint8)
+
+    for lower, upper in hsv_ranges:
+        mask |= cv2.inRange(hsv, lower, upper)
+
+    return mask
+
 def threshold(frame, color, inverse=False):
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     lower, upper = constants.THRESHOLD_RANGES[color]

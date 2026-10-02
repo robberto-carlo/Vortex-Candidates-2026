@@ -6,7 +6,7 @@
 #include <VL53L0X.h>
 
 // Cantidad de VL53L0X usados (True = 7 / False = 6)
-const bool USE_7_SENSORS = true;
+const bool USE_7_SENSORS = false;
 
 LiquidCrystal_I2C lcd(0x27, 16, 2);
 MPU6050 mpu;
@@ -77,7 +77,7 @@ const int serialInterval = 100;
 int lastDirection = 0; 
 
 // Constantes
-const int PULSOS_NORMAL = 971; 
+const int PULSOS_NORMAL = 1026; 
 const int PULSOS_OMNI = 971; 
 
 void setup() {
@@ -99,6 +99,8 @@ void setup() {
       while (1);
     }
     sensors[i].setAddress(sensorAddresses[i]);
+    delay(50);
+    sensors[i].setTimeout(500);
     sensors[i].startContinuous();
   }
 
@@ -117,8 +119,7 @@ void setup() {
     while (1);
   }
 
-  /*
-  if (!tcs.begin()) {
+  /*if (!tcs.begin()) {
     lcd.clear();
     lcd.print("Error TCS34725");
     Serial.println("ERROR|TCS34725");
@@ -259,16 +260,30 @@ void loop() {
       Serial.print("DONE|MOVE|");
       Serial.println(id);
     }
-    else if (direccion == 2){ // Mover a la derecha
+    else if (direccion == 2){ // Mover a la derecha hasta que usen STOP
       Serial.println("MOVIENDO OMNI DERECHA");
-      swipeRight(180); // Velocidad de las llantas
+      swipeRight(180); // Velocidad de las llantas 
 
       Serial.print("DONE|MOVE|");
       Serial.println(id);
     }
-    else if (direccion == 3){ // Mover a la izquierda
+    else if (direccion == 3){ // Mover a la izquierda hasta que usen STOP
       Serial.println("MOVIENDO OMNI IZQUIERDA");
       swipeLeft(180); // Velocidad de las llantas
+
+      Serial.print("DONE|MOVE|");
+      Serial.println(id);
+    }
+    else if (direccion == 4){ // Mover hacia adelante hasta que usen STOP
+      Serial.println("MOVIENDO OMNI ADELANTE");
+      moverAdelante(baseFR, baseFL, baseBR, baseBL);
+
+      Serial.print("DONE|MOVE|");
+      Serial.println(id);
+    }
+    else if (direccion == 5){ // Mover hacia atras hasta que usen STOP
+      Serial.println("MOVIENDO OMNI ATRAS");
+      moverAtras(100, 100, 100, 100);
 
       Serial.print("DONE|MOVE|");
       Serial.println(id);
@@ -545,11 +560,11 @@ void girar2(float anguloObjetivo) {
       Serial.println(errorGiro);
     }
 
-    if (abs(errorGiro) <= 1.5) { // Llegamos al objetivo
+    if (abs(errorGiro) <= 0.5) { // Llegamos al objetivo
       break;
     }
 
-    int velocidadGiro = constrain(abs(errorGiro) * KpGiro,80,200);
+    int velocidadGiro = constrain(abs(errorGiro)*KpGiro, 80, 200);
     if (errorGiro > 0) { // GIRO DERECHA
       digitalWrite(motFR1, LOW);  digitalWrite(motFR2, HIGH);
       digitalWrite(motBR1, LOW);  digitalWrite(motBR2, HIGH);

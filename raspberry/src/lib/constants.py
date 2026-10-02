@@ -12,26 +12,33 @@ SERIAL_PORT = "/dev/ttyUSB0" #"COM5"
 BAUDRATE = 9600
 
 class ROI(Enum):
-    FRONT = "front"
-    BACK = "back"
+    LINE_SECCION_2 = "lineSeccion2"
+    ADVANCE_SECTION_2 = "AdvanceSeccion2"
     NEXT_TILE_MAZE = "nextTileMaze"
+    NEXT_TILE_NIVELES = "nextTileNiveles"
 
 
 # Cordenadas de ROIs
 ROI_COORDINATES = {
-    ROI.FRONT: {
+    ROI.LINE_SECCION_2: {
         "x1": 0,
         "y1": 0,
-        "x2": 100,
-        "y2": 100
+        "x2": 150,
+        "y2": 150
     },
-    ROI.BACK: {
+    ROI.ADVANCE_SECTION_2: {
         "x1": 0,
         "y1": 0,
         "x2": 150,
         "y2": 150
     },
     ROI.NEXT_TILE_MAZE: {
+        "x1": 0,
+        "y1": 250,
+        "x2": 640,
+        "y2": 480
+    },
+    ROI.NEXT_TILE_NIVELES: {
         "x1": 0,
         "y1": 250,
         "x2": 640,
@@ -76,17 +83,21 @@ COLOR_RANGES_HSV = {
     ],
 
     Color.WHITE: [
-        (np.array([0, 0, 180]), np.array([180, 60, 255]))
+        (np.array([0, 0, 109]), np.array([179, 35, 170]))
     ],
 }
+
+ORANGE_BALL = [
+    (np.array([0, 141, 132]), np.array([15, 255, 255]))
+]
 
 # Color detection - THRESHOLD
 THRESHOLD_RANGES = {
     Color.RED: (0, 80),
-    Color.GREEN: (0, 80),
+    Color.GREEN: (0, 88),
     Color.BLUE: (0, 80),
     Color.YELLOW: (0, 80),
     Color.ORANGE: (0, 80),
     Color.PINK: (0, 80),
-    Color.WHITE: (180, 255),
+    Color.WHITE: (127, 255),
 }
