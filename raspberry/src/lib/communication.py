@@ -198,11 +198,14 @@ class Communication:
             return False
 
     # ESPERAR DONE
-    def wait_done(self):
+    def wait_done(self, camera=None, update_camera=None):
         while True:
             if self.restart_event.is_set(): # Arduino se reinició a media accion
                 self.restart_event.clear()
                 raise ArduinoRestarted("Arduino se reinició mientras se esperaba DONE")
+
+            if camera is not None and update_camera is not None:
+                update_camera(camera)
 
             if self.done_event.wait(0.1): # Arduino termino la accion
                 self.done_event.clear()

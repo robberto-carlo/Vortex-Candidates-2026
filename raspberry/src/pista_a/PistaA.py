@@ -14,33 +14,38 @@ from lib.camera import (
     close_camera)
 
 direccionTile = 1
+id_camera = 0
 turnDegrees = 90
-freeDistance = 20 * 10 #cm para considerar pared * 10 (mm a cm)
+freeDistance = 20 * 10 #cm -> mm para considerar pared
 cameraTime = 0.3 # 0.5
 initialRightHand = True
 debug = True
 showCamera = True
 
+last_aruco = None
+aruco_backup_start = time.time()
+aruco_backup_ids = []
+
 # MOVIMIENTOS
-def move_front(communication, direccion=direccionTile):
+def move_front(communication, camera=None, direccion=direccionTile):
     if not communication.send(f"MOVE|{direccion}"):
         raise ArduinoRestarted("Se perdió la comunicación con Arduino")
 
-    return communication.wait_done()
+    return communication.wait_done(camera=camera, update_camera=update_aruco_backup)
 
-def turn_right(communication, degrees=turnDegrees):
+def turn_right(communication, camera=None, degrees=turnDegrees):
     if not communication.send(f"TURN|R|{degrees}"):
         raise ArduinoRestarted("Se perdió la comunicación con Arduino")
 
-    return communication.wait_done()
+    return communication.wait_done(camera=camera, update_camera=update_aruco_backup)
 
-def turn_left(communication, degrees=turnDegrees):
+def turn_left(communication, camera=None, degrees=turnDegrees):
     if not communication.send(f"TURN|L|{degrees}"):
         raise ArduinoRestarted("Se perdió la comunicación con Arduino")
 
-    return communication.wait_done()
+    return communication.wait_done(camera=camera, update_camera=update_aruco_backup)
 
-def turn_back(communication, direction="R"):
+def turn_back(communication, camera=None, direction="R"):
     if direction not in ("R", "L"):
         print("Dirección de giro inválida")
         return None
@@ -48,7 +53,7 @@ def turn_back(communication, direction="R"):
     if not communication.send(f"TURN|{direction}|180"):
         raise ArduinoRestarted("Se perdió la comunicación con Arduino")
 
-    return communication.wait_done()
+    return communication.wait_done(camera=camera, update_camera=update_aruco_backup)
 
 # SENSORES
 def get_sensors(communication):
@@ -97,23 +102,28 @@ def execute_direction(communication, direction, camera):
     next_aruco = None
     if direction == "FRONT":
         next_color,next_aruco = get_next_tile_info(camera)
-        move_front(communication)
+        move_front(communication, camera)
 
     elif direction == "RIGHT":
-        turn_right(communication)
+        turn_right(communication, camera)
         next_color,next_aruco = get_next_tile_info(camera)
-        move_front(communication)
+        move_front(communication, camera)
 
     elif direction == "LEFT":
-        turn_left(communication)
+        turn_left(communication, camera)
         next_color,next_aruco = get_next_tile_info(camera)
-        move_front(communication)
+        move_front(communication, camera)
 
     elif direction == "BACK":
-        turn_back(communication)
+        turn_back(communication, camera)
         next_color,next_aruco = get_next_tile_info(camera)
-        move_front(communication)
+        move_front(communication, camera)
 
+    if next_aruco is None:
+        if last_aruco is not None:
+            next_aruco = last_aruco
+            last_aruco = None
+        
     if debug:
         print("Color siguiente tile:", next_color.name if next_color else None)
         print("ArUco siguiente tile:", next_aruco)
@@ -125,7 +135,7 @@ def get_next_tile_info(camera):
     start_time = time.time()
     colors = []
     arucos = []
-
+    time.sleep(0.2)
     while time.time() - start_time < cameraTime:
         frame = read_frame(camera)
         if frame is None:
@@ -189,11 +199,56 @@ def get_next_tile_info(camera):
 
     return dominant_color, detected_aruco
 
+def update_aruco_backup(camera):
+    global last_aruco
+    global aruco_backup_start
+    global aruco_backup_ids
+
+    frame = read_frame(camera)
+    if frame is not None:
+        aruco = detect_aruco(frame)
+        if aruco is not None:
+            aruco_id, corners = aruco
+            aruco_backup_ids.append(aruco_id)
+
+            if showCamera:
+                corners_int = corners.astype(int)
+                cv2.polylines(
+                    frame,
+                    [corners_int],
+                    True,
+                    (0, 255, 0),
+                    2)
+                x, y = corners_int[0][0]
+                cv2.putText(
+                    frame,
+                    f"ArUco: {aruco_id}",
+                    (x, y - 10),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    0.6,
+                    (0, 255, 0),
+                    2)
+
+        if showCamera:
+            cv2.imshow("Camera", frame)
+            if cv2.waitKey(1) & 0xFF == ord("q"):
+                return last_aruco
+        
+    if time.time() - aruco_backup_start >= 3:
+        if aruco_backup_ids:
+            last_aruco = max(set(aruco_backup_ids),key=aruco_backup_ids.count)
+            if debug:
+                print("ID detectado:", last_aruco)
+            aruco_backup_ids.clear()
+
+        aruco_backup_start = time.time()
+    return last_aruco
+
 # MAZE
 def solve_maze(communication):
     print("INICIANDO MAZE")
 
-    camera = open_camera(0)
+    camera = open_camera(id_camera)
     if camera is None:
             raise RuntimeError("No se pudo abrir la cámara")
     for _ in range(30): # Esperar los primeros 30 frames
@@ -226,14 +281,14 @@ def solve_maze(communication):
                     print("Llegaste al final")
                     print("Regresando")
 
-                turn_back(communication)
-                move_front(communication)
+                turn_back(communication, camera)
+                move_front(communication, camera)
+                sensors = get_sensors(communication)
 
                 currentRightHand = not currentRightHand
-                isFinalMode = True
-                continue  
+                isFinalMode = True  
 
-            if next_color == constants.Color.GREEN: # Next color es Verde
+            elif next_color == constants.Color.GREEN: # Next color es Verde
                 if(isFinalMode):
                     if(green_count>0):
                         green_count -= 1
