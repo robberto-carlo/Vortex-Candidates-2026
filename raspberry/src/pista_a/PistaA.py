@@ -13,7 +13,6 @@ from lib.camera import (
     detect_aruco,
     close_camera)
 
-direccionTile = 1
 id_camera = 0
 turnDegrees = 90
 freeDistance = 20 * 10 #cm -> mm para considerar pared
@@ -27,7 +26,7 @@ aruco_backup_start = time.time()
 aruco_backup_ids = []
 
 # MOVIMIENTOS
-def move_front(communication, camera=None, direccion=direccionTile):
+def move_front(communication, camera=None, direccion=1):
     if not communication.send(f"MOVE|{direccion}"):
         raise ArduinoRestarted("Se perdió la comunicación con Arduino")
 
@@ -54,6 +53,22 @@ def turn_back(communication, camera=None, direction="R"):
         raise ArduinoRestarted("Se perdió la comunicación con Arduino")
 
     return communication.wait_done(camera=camera, update_camera=update_aruco_backup)
+
+def center_distance(communication, camera=None):
+    if not communication.send("CENTER|1"):
+        raise ArduinoRestarted("Se perdió la comunicación con Arduino")
+
+    return communication.wait_done(camera=camera,update_camera=update_aruco_backup)
+
+def center_angle(communication, camera=None):
+    if not communication.send("CENTER|2"):
+        raise ArduinoRestarted("Se perdió la comunicación con Arduino")
+
+    return communication.wait_done(camera=camera,update_camera=update_aruco_backup)
+
+def center(communication, camera=None):
+    center_angle(communication, camera)
+    center_distance(communication, camera)
 
 # SENSORES
 def get_sensors(communication):
@@ -103,21 +118,28 @@ def execute_direction(communication, direction, camera):
     if direction == "FRONT":
         next_color,next_aruco = get_next_tile_info(camera)
         move_front(communication, camera)
+        center(communication, camera)
 
     elif direction == "RIGHT":
         turn_right(communication, camera)
+        center(communication, camera)
         next_color,next_aruco = get_next_tile_info(camera)
         move_front(communication, camera)
+        center(communication, camera)
 
     elif direction == "LEFT":
         turn_left(communication, camera)
+        center(communication, camera)
         next_color,next_aruco = get_next_tile_info(camera)
         move_front(communication, camera)
+        center(communication, camera)
 
     elif direction == "BACK":
         turn_back(communication, camera)
+        center(communication, camera)
         next_color,next_aruco = get_next_tile_info(camera)
         move_front(communication, camera)
+        center(communication, camera)
 
     if next_aruco is None:
         if last_aruco is not None:

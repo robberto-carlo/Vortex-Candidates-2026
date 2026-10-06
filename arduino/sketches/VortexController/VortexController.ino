@@ -6,14 +6,14 @@
 #include <VL53L0X.h>
 
 // Cantidad de VL53L0X usados (True = 7 / False = 6)
-const bool USE_7_SENSORS = false;
+const bool IS_PISTA_B = false;
 
 LiquidCrystal_I2C lcd(0x27, 16, 2);
 MPU6050 mpu;
 Adafruit_TCS34725 tcs = Adafruit_TCS34725(TCS34725_INTEGRATIONTIME_50MS,TCS34725_GAIN_4X);
 const uint8_t xshutPins[7] = {34, 36, 38, 40, 42, 44, 46};
 const uint8_t sensorAddresses[7] = {0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36};
-const uint8_t NUM_SENSORS = USE_7_SENSORS ? 7 : 6;
+const uint8_t NUM_SENSORS = IS_PISTA_B ? 7 : 6;
 VL53L0X sensors[7];
 int distancias[7];
 
@@ -77,8 +77,16 @@ const int serialInterval = 100;
 int lastDirection = 0; 
 
 // Constantes
-const int PULSOS_NORMAL = 1026; 
+const int PULSOS_NORMAL = 1400; //1026; 
 const int PULSOS_OMNI = 971; 
+
+const int DISTANCIA_PARED = 20*10;  // mm, máximo para considerar que hay pared
+const int TOLERANCIA_CENTRADO = 5; // mm
+const int VELOCIDAD_CENTRADO = 220;
+
+const int DISTANCIA_OBJETIVO = 10*10; 
+const int TOLERANCIA_DISTANCIA = 10;
+const int VELOCIDAD_DISTANCIA = 100;
 
 void setup() {
   Serial.begin(9600);
@@ -188,7 +196,6 @@ void reiniciarEncoders() {
 void loop() {
   actualizarYaw();
   actualizarDistancias();
-
 
   if (!Serial.available()) {
     return;
@@ -408,8 +415,35 @@ void loop() {
       lcd.print(aruco);
     }
   }
-  else{
-    Serial.println("ERROR|COMANDO");
+
+  // CENTER|1/2|ID
+  else if (comando.startsWith("CENTER|")){
+    int p1 = comando.indexOf('|');
+    int p2 = comando.indexOf('|', p1 + 1);
+
+    if (p2 == -1) {
+      Serial.println("ERROR|CENTER_FORMAT");
+      return;
+    }
+
+    int tipo = comando.substring(p1 + 1, p2).toInt();
+    int id = comando.substring(p2 + 1).toInt();
+
+    if (tipo == 1) {
+      centradoDistancia();
+
+      Serial.print("DONE|CENTER|");
+      Serial.println(id);
+    }
+    else if (tipo == 2) {
+      centradoGrados();
+
+      Serial.print("DONE|CENTER|");
+      Serial.println(id);
+    }
+    else {
+      Serial.println("ERROR|CENTER_TYPE|");
+    }
   }
 }
 
@@ -506,7 +540,12 @@ void girarGrados(float gradosDeseados) {
       break;
     }
 
-    int velocidadGiro = constrain(abs(errorGiro) * KpGiro, 90, 200);
+    int velocidadGiro;
+    if(IS_PISTA_B){
+      velocidadGiro = constrain(abs(errorGiro) * KpGiro, 90, 200);
+    }else{
+      velocidadGiro = constrain(abs(errorGiro) * KpGiro, 150, 230);
+    }
 
     if (errorGiro > 0) {
       digitalWrite(motFR1, LOW);  digitalWrite(motFR2, HIGH);  
@@ -566,25 +605,10 @@ void girar2(float anguloObjetivo) {
 
     int velocidadGiro = constrain(abs(errorGiro)*KpGiro, 80, 200);
     if (errorGiro > 0) { // GIRO DERECHA
-      digitalWrite(motFR1, LOW);  digitalWrite(motFR2, HIGH);
-      digitalWrite(motBR1, LOW);  digitalWrite(motBR2, HIGH);
-      digitalWrite(motFL1, HIGH); digitalWrite(motFL2, LOW);
-      digitalWrite(motBL1, HIGH); digitalWrite(motBL2, LOW);
-
-      lastDirection = 2;
-    } else { // GIRO IZQUIERDA
-      digitalWrite(motFR1, HIGH); digitalWrite(motFR2, LOW);
-      digitalWrite(motBR1, HIGH); digitalWrite(motBR2, LOW);
-      digitalWrite(motFL1, LOW);  digitalWrite(motFL2, HIGH);
-      digitalWrite(motBL1, LOW);  digitalWrite(motBL2, HIGH);
-
-      lastDirection = 3;
+      girarDerecha(velocidadGiro);
+    }else { // GIRO IZQUIERDA
+      girarIzquierda(velocidadGiro);
     }
-
-    analogWrite(potmotFR, velocidadGiro);
-    analogWrite(potmotFL, velocidadGiro);
-    analogWrite(potmotBR, velocidadGiro);
-    analogWrite(potmotBL, velocidadGiro);
   }
 
   parar();
@@ -655,6 +679,7 @@ void parar() {
 
 // Funciones de Movimientos con ruedas normales
 void moverAdelante(int fr, int fl, int br, int bl) {
+  lastDirection = 1;
   digitalWrite(motFR1, HIGH); digitalWrite(motFR2, LOW);
   digitalWrite(motFL1, HIGH); digitalWrite(motFL2, LOW);
   digitalWrite(motBR1, HIGH); digitalWrite(motBR2, LOW);
@@ -667,6 +692,7 @@ void moverAdelante(int fr, int fl, int br, int bl) {
 }
 
 void moverAtras(int fr, int fl, int br, int bl) {
+  lastDirection = -1;
   digitalWrite(motFR1, LOW);  digitalWrite(motFR2, HIGH);
   digitalWrite(motFL1, LOW);  digitalWrite(motFL2, HIGH);
   digitalWrite(motBR1, LOW);  digitalWrite(motBR2, HIGH);
@@ -851,5 +877,149 @@ void actualizarDistancias() {
     sensorDown = distancias[6];
   } else {
     sensorDown = 0;
+  }
+}
+
+void girarDerecha(int velocidad) { // GIRO DERECHA
+  digitalWrite(motFR1, LOW);  digitalWrite(motFR2, HIGH);
+  digitalWrite(motBR1, LOW);  digitalWrite(motBR2, HIGH);
+  digitalWrite(motFL1, HIGH); digitalWrite(motFL2, LOW);
+  digitalWrite(motBL1, HIGH); digitalWrite(motBL2, LOW);
+
+  analogWrite(potmotFR, velocidad);
+  analogWrite(potmotFL, velocidad);
+  analogWrite(potmotBR, velocidad);
+  analogWrite(potmotBL, velocidad);
+  lastDirection = 2;
+}
+
+void girarIzquierda(int velocidad) { // GIRO IZQUIERDA
+  digitalWrite(motFR1, HIGH); digitalWrite(motFR2, LOW);
+  digitalWrite(motBR1, HIGH); digitalWrite(motBR2, LOW);
+  digitalWrite(motFL1, LOW);  digitalWrite(motFL2, HIGH);
+  digitalWrite(motBL1, LOW);  digitalWrite(motBL2, HIGH);
+
+  analogWrite(potmotFR, velocidad);
+  analogWrite(potmotFL, velocidad);
+  analogWrite(potmotBR, velocidad);
+  analogWrite(potmotBL, velocidad);
+  lastDirection = 3;
+}
+
+
+
+void centradoGrados() {
+  while (true) {
+    actualizarDistancias();
+
+    // Hay pared a la derecha
+    if (distancias[1] < DISTANCIA_PARED && distancias[2] < DISTANCIA_PARED) {
+      int s1 = distancias[1]; 
+      int s2 = distancias[2]; 
+
+      int error = s1 - s2;
+      if (abs(error) <= TOLERANCIA_CENTRADO) {
+        parar();
+        return;
+      }
+
+      if (error > 0) {  // S2 > S3 -> girar derecha
+        girarDerecha(VELOCIDAD_CENTRADO);
+      } 
+      else { // S3 > S2 -> girar izquierda
+        girarIzquierda(VELOCIDAD_CENTRADO);
+      }
+      continue;
+    }
+
+    // Si no hay pared derecha, intentamos usar la izquierda
+    if (distancias[4] < DISTANCIA_PARED && distancias[5] < DISTANCIA_PARED) {
+      int s1 = distancias[4]; // S5
+      int s2 = distancias[5]; // S6
+
+      int error = s1 - s2;
+      if (abs(error) <= TOLERANCIA_CENTRADO) {
+        parar();
+        return;
+      }
+
+      if (error > 0) { // S5 > S6 -> girar derecha
+        girarDerecha(VELOCIDAD_CENTRADO);
+      } 
+      else { // S6 > S5 -> girar izquierda
+        girarIzquierda(VELOCIDAD_CENTRADO);
+      }
+      continue;
+    }
+    
+    // No hay pared disponible
+    parar();
+    return;
+  }
+}
+
+void centradoDistancia() {
+  while (true) {
+    actualizarDistancias();
+
+    // Hay pared en frente
+    if (distancias[0] < DISTANCIA_PARED) {
+      int distancia = distancias[0];
+      int error = distancia - DISTANCIA_OBJETIVO;
+
+      if (abs(error) <= TOLERANCIA_DISTANCIA) {
+        parar();
+        return;
+      }
+
+      if (error > 0) { // lejos -> avanzar
+        moverAdelante(
+          VELOCIDAD_DISTANCIA,
+          VELOCIDAD_DISTANCIA,
+          VELOCIDAD_DISTANCIA,
+          VELOCIDAD_DISTANCIA);
+      }
+      else{ // cerca -> retroceder
+        moverAtras(
+          VELOCIDAD_DISTANCIA,
+          VELOCIDAD_DISTANCIA,
+          VELOCIDAD_DISTANCIA,
+          VELOCIDAD_DISTANCIA);
+      }
+
+      continue;
+    }
+
+    // Hay pared atras
+    if (distancias[3] < DISTANCIA_PARED+50) {
+      int distancia = distancias[3];
+      int error = distancia - (DISTANCIA_OBJETIVO+50);
+
+      if (abs(error) <= TOLERANCIA_DISTANCIA) {
+        parar();
+        return;
+      }
+
+      if (error > 0) { // lejos -> retroceder
+        moverAtras(
+          VELOCIDAD_DISTANCIA,
+          VELOCIDAD_DISTANCIA,
+          VELOCIDAD_DISTANCIA,
+          VELOCIDAD_DISTANCIA);
+      }
+      else{ //cerca -> avanzar
+        moverAdelante(
+          VELOCIDAD_DISTANCIA,
+          VELOCIDAD_DISTANCIA,
+          VELOCIDAD_DISTANCIA,
+          VELOCIDAD_DISTANCIA);
+      }
+
+      continue;
+    }
+
+    // No hay pared ni enfrente ni atras
+    parar();
+    return;
   }
 }
