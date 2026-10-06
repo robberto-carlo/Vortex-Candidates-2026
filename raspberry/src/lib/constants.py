@@ -58,16 +58,17 @@ class Color(Enum):
 # Color detection - HSV
 COLOR_RANGES_HSV = {
     Color.RED: [
-        (np.array([0, 100, 100]), np.array([10, 255, 255])),
-        (np.array([170, 100, 100]), np.array([180, 255, 255]))
+        #(np.array([0, 100, 100]), np.array([10, 255, 255])),
+        #(np.array([170, 100, 100]), np.array([180, 255, 255]))
+        (np.array([138, 49, 60]), np.array([179, 197, 255]))
     ],
 
     Color.GREEN: [
-        (np.array([33, 87, 59]), np.array([79, 255, 163]))
+        (np.array([61, 123, 81]), np.array([86, 255, 255]))
     ],
 
     Color.BLUE: [
-        (np.array([75, 87, 59]), np.array([122, 255, 163]))
+        (np.array([91, 140, 82]), np.array([127, 255, 255]))
     ],
 
     Color.ORANGE: [
@@ -75,11 +76,11 @@ COLOR_RANGES_HSV = {
     ],
 
     Color.YELLOW: [
-        (np.array([0, 50, 194]), np.array([49, 255, 255]))
+        (np.array([0, 0, 126]), np.array([83, 131, 208]))
     ],
 
     Color.PINK: [
-        (np.array([0, 50, 194]), np.array([179, 255, 255]))
+        (np.array([128, 55, 154]), np.array([158, 168, 255]))
     ],
 
     Color.WHITE: [
