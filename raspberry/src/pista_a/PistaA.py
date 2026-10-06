@@ -67,8 +67,11 @@ def center_angle(communication, camera=None):
     return communication.wait_done(camera=camera,update_camera=update_aruco_backup)
 
 def center(communication, camera=None):
-    center_angle(communication, camera)
+    time.sleep(0.1)
+    center_angle(communication)
+    time.sleep(0.1)
     center_distance(communication, camera)
+    time.sleep(0.1)
 
 # SENSORES
 def get_sensors(communication):
@@ -113,33 +116,34 @@ def decide_direction(sensors, currentRightHand):
 
 # EJECUTAR DECISION
 def execute_direction(communication, direction, camera):
+    global last_aruco
     next_color = None
     next_aruco = None
     if direction == "FRONT":
         next_color,next_aruco = get_next_tile_info(camera)
         move_front(communication, camera)
-        center(communication, camera)
+        center_distance(communication,camera)
 
     elif direction == "RIGHT":
         turn_right(communication, camera)
         center(communication, camera)
         next_color,next_aruco = get_next_tile_info(camera)
         move_front(communication, camera)
-        center(communication, camera)
+        center_distance(communication,camera)
 
     elif direction == "LEFT":
         turn_left(communication, camera)
         center(communication, camera)
         next_color,next_aruco = get_next_tile_info(camera)
         move_front(communication, camera)
-        center(communication, camera)
+        center_distance(communication,camera)
 
     elif direction == "BACK":
         turn_back(communication, camera)
         center(communication, camera)
         next_color,next_aruco = get_next_tile_info(camera)
         move_front(communication, camera)
-        center(communication, camera)
+        center_distance(communication,camera)
 
     if next_aruco is None:
         if last_aruco is not None:
@@ -285,7 +289,8 @@ def solve_maze(communication):
         if debug:
             print("Tile:", tile)
             print("Dirección:", "FRONT")
-        
+
+        center(communication, camera)
         next_color,next_aruco = execute_direction(communication,"FRONT",camera)
         send_lcd(communication, next_color, next_aruco)
         tile += 1
@@ -304,7 +309,9 @@ def solve_maze(communication):
                     print("Regresando")
 
                 turn_back(communication, camera)
+                center(communication, camera)
                 move_front(communication, camera)
+                center_distance(communication,camera)
                 sensors = get_sensors(communication)
 
                 currentRightHand = not currentRightHand

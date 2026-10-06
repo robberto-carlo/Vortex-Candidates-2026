@@ -77,12 +77,12 @@ const int serialInterval = 100;
 int lastDirection = 0; 
 
 // Constantes
-const int PULSOS_NORMAL = 1400; //1026; 
+const int PULSOS_NORMAL = 971; //1400; 
 const int PULSOS_OMNI = 971; 
 
 const int DISTANCIA_PARED = 20*10;  // mm, máximo para considerar que hay pared
 const int TOLERANCIA_CENTRADO = 5; // mm
-const int VELOCIDAD_CENTRADO = 220;
+const int VELOCIDAD_CENTRADO = 90;
 
 const int DISTANCIA_OBJETIVO = 10*10; 
 const int TOLERANCIA_DISTANCIA = 10;
@@ -544,7 +544,8 @@ void girarGrados(float gradosDeseados) {
     if(IS_PISTA_B){
       velocidadGiro = constrain(abs(errorGiro) * KpGiro, 90, 200);
     }else{
-      velocidadGiro = constrain(abs(errorGiro) * KpGiro, 150, 230);
+      //velocidadGiro = constrain(abs(errorGiro) * KpGiro, 150, 230);
+      velocidadGiro = constrain(abs(errorGiro) * KpGiro, 90, 200);
     }
 
     if (errorGiro > 0) {
@@ -618,6 +619,7 @@ void girar2(float anguloObjetivo) {
 // Funcion Parar
 void parar() {
   actualizarYaw();
+  lastDirection = 0; // Temporal
 
   if (lastDirection == 1) { // Adelante
     digitalWrite(motFR1, LOW);  digitalWrite(motFR2, HIGH);
@@ -906,15 +908,32 @@ void girarIzquierda(int velocidad) { // GIRO IZQUIERDA
   lastDirection = 3;
 }
 
-
-
 void centradoGrados() {
+  actualizarDistancias();
+  int promedioRight = (distancias[1] + distancias[2]) / 2;
+  int promedioLeft  = (distancias[4] + distancias[5]) / 2;
+  
+  bool paredRight;
+  if (promedioRight < DISTANCIA_PARED && promedioLeft < DISTANCIA_PARED) {
+    paredRight = promedioRight < promedioLeft;
+  }
+  else if (promedioRight < DISTANCIA_PARED) {
+    paredRight = true;
+  }
+  else if (promedioLeft < DISTANCIA_PARED) {
+    paredRight = false;
+  }
+  else {
+    parar();
+    return;
+  }
+
   while (true) {
     actualizarDistancias();
-
+    
     // Hay pared a la derecha
-    if (distancias[1] < DISTANCIA_PARED && distancias[2] < DISTANCIA_PARED) {
-      int s1 = distancias[1]; 
+    if (paredRight) {
+      int s1 = distancias[1] + 45; // +45 = correcion del sensor tof - TEMPORAL 
       int s2 = distancias[2]; 
 
       int error = s1 - s2;
@@ -930,10 +949,8 @@ void centradoGrados() {
         girarIzquierda(VELOCIDAD_CENTRADO);
       }
       continue;
-    }
-
-    // Si no hay pared derecha, intentamos usar la izquierda
-    if (distancias[4] < DISTANCIA_PARED && distancias[5] < DISTANCIA_PARED) {
+    } 
+    else { // Si no hay pared derecha, intentamos usar la izquierda
       int s1 = distancias[4]; // S5
       int s2 = distancias[5]; // S6
 
@@ -951,10 +968,6 @@ void centradoGrados() {
       }
       continue;
     }
-    
-    // No hay pared disponible
-    parar();
-    return;
   }
 }
 

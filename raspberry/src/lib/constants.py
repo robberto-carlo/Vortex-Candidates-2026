@@ -33,9 +33,9 @@ ROI_COORDINATES = {
         "y2": 150
     },
     ROI.NEXT_TILE_MAZE: {
-        "x1": 0,
-        "y1": 250,
-        "x2": 640,
+        "x1": 130,
+        "y1": 290,
+        "x2": 510,
         "y2": 480
     },
     ROI.NEXT_TILE_NIVELES: {
@@ -84,7 +84,7 @@ COLOR_RANGES_HSV = {
     ],
 
     Color.WHITE: [
-        (np.array([0, 0, 109]), np.array([179, 35, 170]))
+        (np.array([89, 0, 153]), np.array([138, 49, 224]))
     ],
 }
 
