@@ -57,13 +57,11 @@ def turn_back(communication, camera=None, direction="R"):
 def center_distance(communication, camera=None):
     if not communication.send("CENTER|1"):
         raise ArduinoRestarted("Se perdió la comunicación con Arduino")
-
     return communication.wait_done(camera=camera,update_camera=update_aruco_backup)
 
 def center_angle(communication, camera=None):
     if not communication.send("CENTER|2"):
         raise ArduinoRestarted("Se perdió la comunicación con Arduino")
-
     return communication.wait_done(camera=camera,update_camera=update_aruco_backup)
 
 def center(communication, camera=None):
@@ -166,7 +164,7 @@ def get_next_tile_info(camera):
         frame = read_frame(camera)
         if frame is None:
             continue
-        roi = get_roi(frame, constants.ROI("nextTileMaze"))
+        roi = get_roi(frame, constants.ROI.NEXT_TILE_MAZE)
 
         color = detect_dominant_color(roi)
         if color is not None and color != constants.Color.WHITE:

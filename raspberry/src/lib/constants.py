@@ -22,27 +22,27 @@ class ROI(Enum):
 ROI_COORDINATES = {
     ROI.LINE_SECCION_2: {
         "x1": 0,
-        "y1": 0,
-        "x2": 150,
-        "y2": 150
+        "y1": 130,
+        "x2": 640,
+        "y2": 240
     },
     ROI.ADVANCE_SECTION_2: {
-        "x1": 0,
+        "x1": 115,
         "y1": 0,
-        "x2": 150,
-        "y2": 150
+        "x2": 520,
+        "y2": 480
     },
     ROI.NEXT_TILE_MAZE: {
-        "x1": 130,
-        "y1": 290,
-        "x2": 510,
-        "y2": 480
+        "x1": 230,
+        "y1": 190,
+        "x2": 400,
+        "y2": 330
     },
     ROI.NEXT_TILE_NIVELES: {
-        "x1": 0,
-        "y1": 250,
-        "x2": 640,
-        "y2": 480
+        "x1": 230,
+        "y1": 190,
+        "x2": 400,
+        "y2": 330
     }
 }
 
@@ -58,9 +58,10 @@ class Color(Enum):
 # Color detection - HSV
 COLOR_RANGES_HSV = {
     Color.RED: [
+        (np.array([144, 68, 41]), np.array([179, 181, 88])),
+        (np.array([0, 61, 46]), np.array([30, 175, 89]))
         #(np.array([0, 100, 100]), np.array([10, 255, 255])),
         #(np.array([170, 100, 100]), np.array([180, 255, 255]))
-        (np.array([138, 49, 60]), np.array([179, 197, 255]))
     ],
 
     Color.GREEN: [
