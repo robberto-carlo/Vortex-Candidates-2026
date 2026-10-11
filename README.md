@@ -1,13 +1,16 @@
 # Vortex-Candidates-2026
 
 <p align="center">
+  <img src="assets/images/Vortex-X_02.jpeg" width="500" alt="Vortex robot - Candidates 2026">
+</p>
 
-<img src="https://img.shields.io/badge/Device-Raspberry%20Pi-red?style=for-the-badge">
-
-<img src="https://img.shields.io/badge/Language-Python-blue?style=for-the-badge">
-
-<img src="https://img.shields.io/badge/Vision%20System-OpenCV-green?style=for-the-badge">
-
+<p align="center">
+  <img src="https://img.shields.io/badge/Team-Vortex-purple?style=for-the-badge">
+  <img src="https://img.shields.io/badge/Competition-Candidates%202026-orange?style=for-the-badge">
+  <img src="https://img.shields.io/badge/Device-Raspberry%20Pi-red?style=for-the-badge">
+  <img src="https://img.shields.io/badge/Language-Python-blue?style=for-the-badge">
+  <img src="https://img.shields.io/badge/Vision%20System-OpenCV-green?style=for-the-badge">
+  <img src="https://img.shields.io/badge/Microcontroller-Arduino-00979D?style=for-the-badge">
 </p>
 
 ---
@@ -114,6 +117,40 @@ Durante la cuarta semana se realizaron las primeras pruebas de integración del 
 
 ---
 
+## Week 5
+
+Durante la quinta semana se realizaron pruebas de la lógica de resolución de la **Pista A (MAZE)** en la pista física. Se evaluó el comportamiento del robot durante los movimientos, la detección de paredes y el reconocimiento de los elementos del laberinto mediante el sistema de visión por computadora.
+
+### Completed
+
+- Pruebas de navegación y resolución del MAZE.
+- Verificación de la detección de paredes mediante sensores de distancia.
+- Pruebas de reconocimiento de colores y marcadores ArUco con OpenCV.
+- Identificación de errores y ajustes en la lógica de movimiento y navegación.
+- Ajuste de constantes y parámetros de control.
+- Implementación de funciones de centrado del robot mediante sensores de distancia.
+- Pruebas de procesamiento de varios frames consecutivos para reducir errores ocasionados por detecciones momentáneas.
+
+---
+
+## Week 6
+
+Durante la sexta semana se realizaron pruebas finales y ajustes en la lógica de navegación de la **Pista A (MAZE)**. Se corrigieron errores de movimiento, se calibraron los giros y se ajustaron constantes para mejorar la precisión del robot. También se implementaron funciones de centrado mediante sensores de distancia para mantener una posición adecuada respecto a las paredes.
+
+Además, se realizaron pruebas de las secciones 1 y 3 de la **Pista B (Niveles)**, trabajando en la búsqueda y recolección de la pelota mediante la cámara y el mecanismo *intake*, así como en la detección de colores para determinar las direcciones de movimiento. Finalmente, se realizaron ajustes para mejorar la integración entre la visión por computadora, los sensores y los sistemas de control del robot.
+
+### Completed
+
+- Pruebas finales y corrección de errores en el MAZE.
+- Calibración de giros.
+- Ajuste de constantes y parámetros de control.
+- Implementación de funciones de centrado mediante sensores de distancia.
+- Pruebas de las secciones 1 y 3 de la Pista B.
+- Ajustes en la detección de colores y la lógica de recolección de la pelota.
+- Mejoras en la integración entre la Raspberry Pi y el Arduino.
+
+---
+
 ## Pista A - MAZE
 
 Se desarrolló la lógica principal para resolver el reto MAZE. La Raspberry Pi obtiene información de los sensores del robot y utiliza estos datos para determinar la siguiente dirección de movimiento.
@@ -122,16 +159,18 @@ Se implementó una lógica basada en reglas de navegación que permite decidir e
 
 También se implementó el almacenamiento de la ruta recorrida, permitiendo utilizarla para el regreso del robot después de encontrar la condición de finalización del laberinto.
 
-## Vision System
+## Pista B - NIVELES
+
+Se desarrolló la lógica de navegación para resolver el reto NIVELES, dividiendo el recorrido en tres secciones. La Raspberry Pi procesa las imágenes mediante OpenCV y se comunica con el Arduino para controlar los movimientos y consultar los sensores del robot.
+
+En la **sección 1**, se implementó la búsqueda y recolección de la pelota mediante la detección de su color naranja, el centrado visual y la activación del mecanismo *intake*. También se desarrolló la lógica para encontrar la salida mediante la detección de tiles rojos.
+
+En la **sección 2**, se trabajó en la navegación mediante la detección de líneas blancas y rojas, utilizando regiones de interés (ROI).
+
+En la **sección 3**, se implementó el reconocimiento de colores para determinar la dirección de movimiento del robot. El recorrido finaliza cuando se detecta el color verde.
 
 
-Se agregó la **detección de marcadores ArUco** utilizando OpenCV. Esto permite identificar los marcadores presentes en la pista y obtener su ID.
-
-También se integró la detección de ArUco con el procesamiento de cada tile del MAZE, permitiendo obtener información tanto del **color** como del **ArUco** detectado.
-
-El sistema utiliza varias capturas durante un intervalo de tiempo para obtener diferentes lecturas de la cámara y seleccionar la detección predominante. Esto ayuda a reducir errores producidos por detecciones momentáneas.
-
---- 
+---
 
 ## Raspberry Pi - Arduino Communication
 
@@ -166,6 +205,17 @@ Entre los parámetros configurables se encuentran:
 * Rangos HSV.
 * Rangos de threshold.
 * Áreas mínimas para detección.
+
+---
+
+## Vision System
+
+
+Se agregó la **detección de marcadores ArUco** utilizando OpenCV. Esto permite identificar los marcadores presentes en la pista y obtener su ID.
+
+También se integró la detección de ArUco con el procesamiento de cada tile del MAZE, permitiendo obtener información tanto del **color** como del **ArUco** detectado.
+
+El sistema utiliza varias capturas durante un intervalo de tiempo para obtener diferentes lecturas de la cámara y seleccionar la detección predominante. Esto ayuda a reducir errores producidos por detecciones momentáneas. 
 
 ---
 
