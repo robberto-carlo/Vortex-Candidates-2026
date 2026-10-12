@@ -68,7 +68,6 @@ def solve_niveles(communication):
                 print("\nRESOLVIENDO SECCIÓN 1")
                 resolver_seccion_1(communication, cameraBack)
                 exit_seccion_1(communication, cameraFront)
-
                 seccion_actual = SECCION_2
                 print("Sección 1 completada")
                 continue
@@ -77,7 +76,6 @@ def solve_niveles(communication):
             elif seccion_actual == SECCION_2:
                 print("\nRESOLVIENDO SECCIÓN 2")
                 resolver_seccion_2(communication,cameraFront)
-
                 seccion_actual = SECCION_3
                 print("Sección 2 completada")
                 continue
@@ -86,7 +84,6 @@ def solve_niveles(communication):
             elif seccion_actual == SECCION_3:
                 print("\nRESOLVIENDO SECCIÓN 3")
                 resolver_seccion_3(communication,cameraFront)
-
                 print("Sección 3 completada\nPISTA B TERMINADA")
                 return True
 
@@ -410,31 +407,7 @@ def resolver_seccion_3(communication, camera):
 
     while True:
         while nextColor is None:
-            frame = read_frame(camera)
-            if frame is None:
-                continue
-
-            colors = [
-                constants.Color.ORANGE,
-                constants.Color.BLUE,
-                constants.Color.YELLOW,
-                constants.Color.PINK,
-                constants.Color.GREEN]
-
-            percentages = {
-                color: color_percentage(frame, color)
-                for color in colors
-            }
-
-            sortedColors = sorted(
-                percentages.items(),
-                key=lambda item: item[1],
-                reverse=True)
-            bestColor, bestPercentage = sortedColors[0]
-            secondPercentage = sortedColors[1][1]
-
-            if bestPercentage >= 10 and bestPercentage - secondPercentage >= 10:
-                nextColor = bestColor
+            nextColor = get_next_tile_info(camera)
             if debug:
                 print(nextColor)
 
@@ -458,21 +431,31 @@ def resolver_seccion_3(communication, camera):
 
         nextColor = None
 
+
 def get_next_tile_info(camera):
     start_time = time.time()
-    colors = []
+    color_samples = []
+
+    colors = [
+        constants.Color.ORANGE,
+        constants.Color.BLUE,
+        constants.Color.YELLOW,
+        constants.Color.PINK,
+        constants.Color.GREEN]
+
     while time.time() - start_time < cameraTime:
         frame = read_frame(camera)
         if frame is None:
             continue
-        roi = get_roi(frame, constants.ROI.NEXT_TILE_NIVELES)
 
-        color = detect_dominant_color(roi)
-        if color is not None and color != constants.Color.WHITE and color != constants.Color.RED:
-            colors.append(color)
+        roi = get_roi(frame, constants.ROI.NEXT_TILE_NIVELES)
+        percentages = {
+            color: color_percentage(roi, color)
+            for color in colors}
+        color_samples.append(percentages)
 
         if debug:
-            roi_coords = constants.ROI_COORDINATES[constants.ROI.NEXT_TILE_MAZE]
+            roi_coords = constants.ROI_COORDINATES[constants.ROI.NEXT_TILE_NIVELES]
             x1 = roi_coords["x1"]
             y1 = roi_coords["y1"]
             x2 = roi_coords["x2"]
@@ -484,17 +467,33 @@ def get_next_tile_info(camera):
                 (x2, y2),
                 (255, 0, 0),
                 2)
+
             cv2.imshow("Camera", frame)
             if cv2.waitKey(1) & 0xFF == ord("q"):
                 break
 
-    if colors:
-        dominant_color = max(set(colors), key=colors.count) # Color más detectado
+    if color_samples:
+        average_percentages = {
+            color: sum(sample[color] for sample in color_samples) / len(color_samples)
+            for color in colors
+        }
+
+        sorted_colors = sorted(
+            average_percentages.items(),
+            key=lambda item: item[1],
+            reverse=True)
+
+        best_color, best_percentage = sorted_colors[0]
+        second_percentage = sorted_colors[1][1]
+
+        if best_percentage >= 25 and best_percentage - second_percentage >= 10:
+            dominant_color = best_color
+        else:
+            dominant_color = None
     else:
         dominant_color = None
 
     return dominant_color
-
 
 # MOVIMIENTOS
 def move_front(communication, direccion=1):

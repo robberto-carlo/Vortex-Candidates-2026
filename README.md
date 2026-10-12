@@ -1,15 +1,15 @@
 # Vortex-Candidates-2026
 
 <p align="center">
-  <img src="assets/images/Vortex-X_02.jpeg" width="500" alt="Vortex robot - Candidates 2026">
+  <img src="assets/images/Vortex-X_02.jpeg" width="400" alt="Vortex Robot - Candidates 2026">
 </p>
 
 <p align="center">
   <img src="https://img.shields.io/badge/Team-Vortex-purple?style=for-the-badge">
-  <img src="https://img.shields.io/badge/Competition-Candidates%202026-orange?style=for-the-badge">
+  <img src="https://img.shields.io/badge/Competition-Candidates%202026-0057B8?style=for-the-badge">
   <img src="https://img.shields.io/badge/Device-Raspberry%20Pi-red?style=for-the-badge">
-  <img src="https://img.shields.io/badge/Language-Python-blue?style=for-the-badge">
-  <img src="https://img.shields.io/badge/Vision%20System-OpenCV-green?style=for-the-badge">
+  <img src="https://img.shields.io/badge/Language-Python-yellow?style=for-the-badge">
+  <img src="https://img.shields.io/badge/Vision%20System-OpenCV-4CAF50?style=for-the-badge">
   <img src="https://img.shields.io/badge/Microcontroller-Arduino-00979D?style=for-the-badge">
 </p>
 
