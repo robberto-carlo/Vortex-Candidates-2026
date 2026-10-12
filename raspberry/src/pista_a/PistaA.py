@@ -13,13 +13,15 @@ from lib.camera import (
     detect_aruco,
     close_camera)
 
-id_camera = 0
+id_cameraFront = 0
+
+debug = True
+showCamera = True
+
 turnDegrees = 90
 freeDistance = 20 * 10 #cm -> mm para considerar pared
 cameraTime = 0.3 # 0.5
 initialRightHand = True
-debug = True
-showCamera = True
 
 last_aruco = None
 aruco_backup_start = time.time()
@@ -272,7 +274,7 @@ def update_aruco_backup(camera):
 def solve_maze(communication):
     print("INICIANDO MAZE")
 
-    camera = open_camera(id_camera)
+    camera = open_camera(id_cameraFront)
     if camera is None:
             raise RuntimeError("No se pudo abrir la cámara")
     for _ in range(30): # Esperar los primeros 30 frames

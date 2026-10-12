@@ -16,7 +16,7 @@ def main():
             break
 
         # Detectar color
-        mask = camera.hsv_mask(frame, constants.Color.BLUE)
+        mask = camera.hsv_mask(frame, constants.Color.ORANGE)
         # Limpiar máscara
         mask = camera.filter_mask(mask)
         # Detectar objeto

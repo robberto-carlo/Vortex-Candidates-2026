@@ -5,8 +5,10 @@ import cv2
 import lib.camera as camera
 import lib.constants as constants
 
+id_camara = 0
+
 def main():
-    cam = camera.open_camera() # Abrir la camara
+    cam = camera.open_camera(id_camara) # Abrir la camara
     print("Cámara abierta correctamente")
     camera.camera_info(cam)
 

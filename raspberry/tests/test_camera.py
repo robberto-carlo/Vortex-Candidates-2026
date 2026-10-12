@@ -4,9 +4,10 @@ sys.path.append(str(Path(__file__).resolve().parent.parent / "src"))
 import cv2
 import lib.camera as camera
 
+id_camara = 0
 def main():
     # Abrir la camara
-    cam = camera.open_camera(0) 
+    cam = camera.open_camera(id_camara) 
     print("Cámara abierta correctamente")
     camera.camera_info(cam)
 

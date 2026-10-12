@@ -8,7 +8,6 @@ from lib.communication import Communication, ArduinoRestarted
 from lib.camera import (
     color_percentage,
     detect_object,
-    draw_object,
     filter_mask,
     hsv_mask,
     hsv_mask_custom,
@@ -18,10 +17,10 @@ from lib.camera import (
     detect_dominant_color,
     close_camera)
 
-debug = True
-
 id_cameraFront = 2
 id_cameraBack = 0
+
+debug = True
 
 cameraTime = 0.3 # 0.5
 LINE_SECTION_2_X1 = 200
@@ -410,21 +409,51 @@ def resolver_seccion_3(communication, camera):
     nextColor = None
 
     while True:
-        while(nextColor==None):
-            nextColor = get_next_tile_info(camera)
+        while nextColor is None:
+            frame = read_frame(camera)
+            if frame is None:
+                continue
+
+            colors = [
+                constants.Color.ORANGE,
+                constants.Color.BLUE,
+                constants.Color.YELLOW,
+                constants.Color.PINK,
+                constants.Color.GREEN]
+
+            percentages = {
+                color: color_percentage(frame, color)
+                for color in colors
+            }
+
+            sortedColors = sorted(
+                percentages.items(),
+                key=lambda item: item[1],
+                reverse=True)
+            bestColor, bestPercentage = sortedColors[0]
+            secondPercentage = sortedColors[1][1]
+
+            if bestPercentage >= 10 and bestPercentage - secondPercentage >= 10:
+                nextColor = bestColor
             if debug:
                 print(nextColor)
-        move_front(communication)
 
-        if(nextColor==constants.Color.ORANGE):
-            goto(communication, NORTH) # Arriba
-        elif(nextColor==constants.Color.BLUE):
-            goto(communication, EAST) # Derecha
-        elif(nextColor==constants.Color.YELLOW):
-            goto(communication, WEST) # Izquierda
-        elif(nextColor==constants.Color.PINK):
-            goto(communication, SOUTH) # Abajo
-        else: # Es verde (Terminar el codigo)
+        move_front(communication)
+        center(communication)
+
+        if nextColor == constants.Color.ORANGE:
+            goto(communication, NORTH)  # Arriba
+            center_angle(communication)
+        elif nextColor == constants.Color.BLUE:
+            goto(communication, EAST)  # Derecha
+            center_angle(communication)
+        elif nextColor == constants.Color.YELLOW:
+            goto(communication, WEST)  # Izquierda
+            center_angle(communication)
+        elif nextColor == constants.Color.PINK:
+            goto(communication, SOUTH)  # Abajo
+            center_angle(communication)
+        elif nextColor == constants.Color.GREEN:  # Verde --> terminar
             return
 
         nextColor = None
@@ -596,14 +625,11 @@ def main():
         try:
             print("\nEsperando Arduino...")
             communication.wait_ready()
-
             solve_niveles(communication)
             break
-
         except ArduinoRestarted:
             print("\nArduino se reinició o se perdió la comunicación\n")
             communication.close()
-
         except KeyboardInterrupt:
             print("Programa detenido")
             communication.close()

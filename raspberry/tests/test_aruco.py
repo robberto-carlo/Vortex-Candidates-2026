@@ -1,13 +1,7 @@
 import sys
-
-from pathlib import Path
-
-sys.path.append(
-    str(Path(__file__).resolve().parent.parent / "src")
-)
-
 import cv2
-
+from pathlib import Path
+sys.path.append(str(Path(__file__).resolve().parent.parent / "src"))
 from lib.camera import (
     open_camera,
     read_frame,
@@ -15,8 +9,9 @@ from lib.camera import (
     close_camera
 )
 
+id_camara = 0
 
-camera = open_camera(0)
+camera = open_camera(id_camara)
 if camera is None:
     exit()
 
