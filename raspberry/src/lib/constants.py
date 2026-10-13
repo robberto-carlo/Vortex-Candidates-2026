@@ -14,8 +14,11 @@ BAUDRATE = 9600
 class ROI(Enum):
     LINE_SECCION_2 = "lineSeccion2"
     ADVANCE_SECTION_2 = "AdvanceSeccion2"
+    LINE_SECTION_2_TOP = "lineSection2Top"
+    LINE_SECTION_2_BOTTOM = "lineSection2Bottom"
     NEXT_TILE_MAZE = "nextTileMaze"
     NEXT_TILE_NIVELES = "nextTileNiveles"
+    
 
 
 # Cordenadas de ROIs
@@ -32,6 +35,19 @@ ROI_COORDINATES = {
         "x2": 520,
         "y2": 480
     },
+    ROI.LINE_SECTION_2_TOP: {
+        "x1": 0,
+        "y1": 130,
+        "x2": 640,
+        "y2": 185
+    },
+    ROI.LINE_SECTION_2_BOTTOM: {
+        "x1": 0,
+        "y1": 185,
+        "x2": 640,
+        "y2": 240
+    },
+    
     ROI.NEXT_TILE_MAZE: {
         "x1": 230,
         "y1": 190,
@@ -94,7 +110,7 @@ ORANGE_BALL = [
 ]
 
 # Color detection - THRESHOLD
-THRESHOLD_RANGES = {
+COLOR_RANGES_GRAY = {
     Color.RED: (0, 80),
     Color.GREEN: (0, 88),
     Color.BLUE: (0, 80),

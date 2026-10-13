@@ -30,13 +30,43 @@ def get_roi(frame, roi):
 def get_new_roi(frame, x1, y1, x2, y2):
     return frame[y1:y2, x1:x2]
 
-def color_percentage(frame, color):
-    mask = hsv_mask(frame, color)
+def get_roi_mirror(frame, roi):
+    coordinates = constants.ROI_COORDINATES[roi]
+    x1 = coordinates["x1"]
+    y1 = coordinates["y1"]
+    x2 = coordinates["x2"]
+    y2 = coordinates["y2"]
 
+    x1, x2 = frame.shape[1] - x2, frame.shape[1] - x1
+    return frame[y1:y2, x1:x2]
+
+def color_percentage_hsv(frame, color):
+    mask = hsv_mask(frame, color)
     color_pixels = cv2.countNonZero(mask)
     total_pixels = mask.size
     percentage = (color_pixels / total_pixels) * 100
+    return percentage
 
+def get_color_percentages_hsv(frame, *colors):
+    hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+    total_pixels = hsv.shape[0] * hsv.shape[1]
+    if total_pixels == 0:
+        return {color: 0.0 for color in colors}
+    results = {}
+
+    for color in colors:
+        mask = np.zeros(hsv.shape[:2], dtype=np.uint8)
+        for lower, upper in constants.COLOR_RANGES_HSV[color]:
+            mask |= cv2.inRange(hsv, lower, upper)
+
+        results[color] = (cv2.countNonZero(mask) / total_pixels) * 100
+    return results
+
+def color_percentage_gray(frame, color):
+    mask = threshold(frame, color)
+    color_pixels = cv2.countNonZero(mask)
+    total_pixels = mask.size
+    percentage = (color_pixels / total_pixels) * 100
     return percentage
 
 def camera_info(camera):
@@ -69,7 +99,7 @@ def hsv_mask_custom(frame, hsv_ranges):
 
 def threshold(frame, color, inverse=False):
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-    lower, upper = constants.THRESHOLD_RANGES[color]
+    lower, upper = constants.COLOR_RANGES_GRAY[color]
     mask = cv2.inRange(gray, lower, upper)
 
     if inverse:

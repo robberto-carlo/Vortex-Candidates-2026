@@ -6,15 +6,17 @@ sys.path.append(str(Path(__file__).resolve().parent.parent))
 from lib import constants
 from lib.communication import Communication, ArduinoRestarted
 from lib.camera import (
-    color_percentage,
+    color_percentage_gray,
+    color_percentage_hsv,
     detect_object,
     filter_mask,
+    get_color_percentages_hsv,
     hsv_mask,
     hsv_mask_custom,
+    get_roi_mirror,
     open_camera,
     read_frame,
     get_roi,
-    detect_dominant_color,
     close_camera)
 
 id_cameraFront = 2
@@ -260,7 +262,7 @@ def is_next_tile_red(camera):
             continue
 
         roi = get_roi(frame, constants.ROI.NEXT_TILE_NIVELES)
-        percentageRed = color_percentage(roi, constants.Color.RED)
+        percentageRed = color_percentage_hsv(roi, constants.Color.RED)
 
         if debug:
             roi_coords = constants.ROI_COORDINATES[constants.ROI.NEXT_TILE_NIVELES]
@@ -291,15 +293,14 @@ def resolver_seccion_2(communication, camera):
     sensors = get_sensors(communication)
     yaw_frontal = sensors["yaw"]
 
-    going_right = False
-    going_left = False
     WALL_DISTANCE_SECCION2 = 15*10 # Distancia a la pared
+
     while True:
         frame = read_frame(camera)
         if frame is None:
             continue
         
-        roiAdvance = get_roi(frame, constants.ROI.LINE_SECCION_2) 
+        roiAdvance = get_roi(frame, constants.ROI.ADVANCE_SECTION_2) 
         if debug:
             coordinates = constants.ROI_COORDINATES[constants.ROI.ADVANCE_SECTION_2]
             x1 = coordinates["x1"]
@@ -311,69 +312,71 @@ def resolver_seccion_2(communication, camera):
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
 
-        percentageWhite = color_percentage(roiAdvance, constants.Color.WHITE)
-        percentageRed = color_percentage(roiAdvance, constants.Color.RED)
+        percentages = get_color_percentages_hsv(roiAdvance,constants.Color.WHITE,constants.Color.RED)
+        percentageWhite = percentages[constants.Color.WHITE]
+        percentageRed = percentages[constants.Color.RED]
+        sensors = get_sensors(communication)
 
-        if percentageRed>30:
+        if percentageRed>=30: # o si hay pared enfrentre
             stop_robot(communication)
             goto(communication, yaw_frontal)
-            # Mover hasta centra rne las 2 paredes
-            # VERRRR
+            #centrarCheckpoint(communication, camera) # Ver funcionalidad
             return True
 
-        if going_right:
-            sensors = get_sensors(communication)
-            right = sensors["right"]
-
-            if percentageWhite < 15:
-                stop_robot(communication)
-                going_right = False
-                move_front(communication, 4)
-                continue
-
-            if right > WALL_DISTANCE_SECCION2:
-                swipe_right(communication)
-            else:
-                stop_robot(communication)
-                going_right = False
-                goto(communication, yaw_frontal)
-            continue
-
-        if going_left:
-            sensors = get_sensors(communication)
-            left = sensors["left"]
-
-            if percentageWhite < 15:
-                stop_robot(communication)
-                going_left = False
-                move_front(communication, 4)
-                continue
-
-            if left > WALL_DISTANCE_SECCION2:
-                swipe_left(communication)
-            else:
-                stop_robot(communication)
-                going_left = False
-                goto(communication, yaw_frontal)
-            continue
-
-        if percentageWhite > 15:
+        elif percentageWhite >= 10:
             stop_robot(communication)
-            sensors = get_sensors(communication)
-            left = sensors["left"]
-            right = sensors["right"]
+            roiLine = get_roi(frame, constants.ROI.LINE_SECCION_2)
+            _ , width = roiLine.shape[:2]
+            middle_x = width // 2
 
-            if right > left + 20:
-                going_right = True
-            elif left > right + 20:
-                going_left = True
+            roiLeft = roiLine[:, :middle_x]
+            roiRight = roiLine[:, middle_x:]
+            percentageGreenLeft = color_percentage_hsv(roiLeft, constants.Color.GREEN)
+            percentageGreenRight = color_percentage_hsv(roiRight, constants.Color.GREEN)
+
+            if percentageGreenLeft > percentageGreenRight:
+                turn_left(communication)
+                centrarLine(communication, camera, True)
+                turn_right(communication)
             else:
-                going_left = True
-        
+                turn_right(communication)
+                centrarLine(communication, camera, False)
+                turn_left(communication)
         else:
-            move_front(communication,4)
+            move_front(communication, 4)
 
-def centrarCheckpoint(communication, camera):
+def centrarLine(communication, camera, isRight): # isRight = True, busca la linea a la derecha o False a la izquierda
+    isSearchingGreen = True
+    while True:
+        frame = read_frame(camera)
+        if frame is None:
+            continue
+
+        if isSearchingGreen:
+            if isRight:
+                roiBottom = get_roi_mirror(frame, constants.ROI.LINE_SECTION_2_BOTTOM)
+            else:
+                roiBottom = get_roi(frame, constants.ROI.LINE_SECTION_2_BOTTOM)
+
+            percentageGreen = color_percentage_hsv(roiBottom, constants.Color.GREEN)
+            if percentageGreen >= 85:
+                isSearchingGreen = False
+            else:
+                move_front(communication, 4)
+
+        else:
+            if isRight:
+                roiTop = get_roi_mirror(frame, constants.ROI.LINE_SECTION_2_TOP)
+            else:
+                roiTop = get_roi(frame, constants.ROI.LINE_SECTION_2_TOP)
+
+            percentageWhite = color_percentage_hsv(roiTop, constants.Color.WHITE)
+            if percentageWhite >= 40:
+                return
+            else:
+                move_front(communication, 4)
+
+def centrarCheckpoint(communication, camera): 
     while True:
         frame = read_frame(camera)
         if frame is None:
@@ -428,9 +431,7 @@ def resolver_seccion_3(communication, camera):
             center_angle(communication)
         elif nextColor == constants.Color.GREEN:  # Verde --> terminar
             return
-
         nextColor = None
-
 
 def get_next_tile_info(camera):
     start_time = time.time()
@@ -449,9 +450,7 @@ def get_next_tile_info(camera):
             continue
 
         roi = get_roi(frame, constants.ROI.NEXT_TILE_NIVELES)
-        percentages = {
-            color: color_percentage(roi, color)
-            for color in colors}
+        percentages = get_color_percentages_hsv(roi, *colors)
         color_samples.append(percentages)
 
         if debug:
@@ -478,11 +477,7 @@ def get_next_tile_info(camera):
             for color in colors
         }
 
-        sorted_colors = sorted(
-            average_percentages.items(),
-            key=lambda item: item[1],
-            reverse=True)
-
+        sorted_colors = sorted(average_percentages.items(), key=lambda item: item[1], reverse=True)
         best_color, best_percentage = sorted_colors[0]
         second_percentage = sorted_colors[1][1]
 
@@ -499,13 +494,11 @@ def get_next_tile_info(camera):
 def move_front(communication, direccion=1):
     if not communication.send(f"MOVE_OMNI|{direccion}"):
         raise ArduinoRestarted("Se perdió la comunicación con Arduino")
-
     return communication.wait_done()
 
 def move_back(communication, direccion=-1):
     if not communication.send(f"MOVE_OMNI|{direccion}"):
         raise ArduinoRestarted("Se perdió la comunicación con Arduino")
-
     return communication.wait_done()
 
 def swipe_right(communication, direccion=2):
@@ -599,6 +592,7 @@ def down_is_free(sensors, distance=40):
 def reset_mpu(communication):
     if not communication.send("RESET_MPU"):
         raise ArduinoRestarted("Se perdió la comunicación con Arduino")
+    return communication.wait_done()
 
 # INTAKE
 def intake_in(communication):

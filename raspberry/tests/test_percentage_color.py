@@ -29,7 +29,7 @@ try:
         # Mostrar porcentajes de colores dentro del ROI
         print("\033[2J\033[H", end="")
         for color in constants.COLOR_RANGES_HSV:
-            percentage = camera.color_percentage(roi, color)
+            percentage = camera.color_percentage_hsv(roi, color)
             color_name = color.name if hasattr(color, "name") else str(color)
             print(f"{color_name}: {percentage:.2f}%")
 
