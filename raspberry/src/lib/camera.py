@@ -30,7 +30,7 @@ def get_roi(frame, roi):
 def get_new_roi(frame, x1, y1, x2, y2):
     return frame[y1:y2, x1:x2]
 
-def get_roi_mirror(frame, roi):
+def mirror_roi_coordinates(frame, roi):
     coordinates = constants.ROI_COORDINATES[roi]
     x1 = coordinates["x1"]
     y1 = coordinates["y1"]

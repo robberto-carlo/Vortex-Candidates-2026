@@ -6,21 +6,19 @@ sys.path.append(str(Path(__file__).resolve().parent.parent))
 from lib import constants
 from lib.communication import Communication, ArduinoRestarted
 from lib.camera import (
-    color_percentage_gray,
     color_percentage_hsv,
     detect_object,
     filter_mask,
     get_color_percentages_hsv,
     hsv_mask,
     hsv_mask_custom,
-    get_roi_mirror,
     open_camera,
     read_frame,
     get_roi,
     close_camera)
 
-id_cameraFront = 2
-id_cameraBack = 0
+id_cameraFront = 0
+id_cameraBack = 2
 
 debug = True
 
@@ -50,48 +48,33 @@ SOUTH = 180
 WEST = 270
 
 # RESOLVER PISTA B
-def solve_niveles(communication):
+def solve_niveles(communication, cameraFront, cameraBack):
     global seccion_actual
 
-    cameraFront = open_camera(id_cameraFront)
-    cameraBack = open_camera(id_cameraBack)
-    if cameraFront is None:
-        raise RuntimeError("No se pudo abrir la cámara frontal")
-    if cameraBack is None:
-        raise RuntimeError("No se pudo abrir la cámara trasera")
-    for _ in range(30): # Leer los primeros 30 frames
-        read_frame(cameraFront)
-        read_frame(cameraBack)
+    while True:
+        # SECCIÓN 1
+        if seccion_actual == SECCION_1:
+            print("\nRESOLVIENDO SECCIÓN 1")
+            resolver_seccion_1(communication, cameraBack)
+            exit_seccion_1(communication, cameraFront)
+            seccion_actual = SECCION_2
+            print("Sección 1 completada")
+            continue
 
-    try:
-        while True:
-            # SECCIÓN 1
-            if seccion_actual == SECCION_1:
-                print("\nRESOLVIENDO SECCIÓN 1")
-                resolver_seccion_1(communication, cameraBack)
-                exit_seccion_1(communication, cameraFront)
-                seccion_actual = SECCION_2
-                print("Sección 1 completada")
-                continue
+        # SECCIÓN 2
+        elif seccion_actual == SECCION_2:
+            print("\nRESOLVIENDO SECCIÓN 2")
+            resolver_seccion_2(communication,cameraFront)
+            seccion_actual = SECCION_3
+            print("Sección 2 completada")
+            continue
 
-            # SECCIÓN 2
-            elif seccion_actual == SECCION_2:
-                print("\nRESOLVIENDO SECCIÓN 2")
-                resolver_seccion_2(communication,cameraFront)
-                seccion_actual = SECCION_3
-                print("Sección 2 completada")
-                continue
-
-            # SECCIÓN 3
-            elif seccion_actual == SECCION_3:
-                print("\nRESOLVIENDO SECCIÓN 3")
-                resolver_seccion_3(communication,cameraFront)
-                print("Sección 3 completada\nPISTA B TERMINADA")
-                return True
-
-    finally:
-        close_camera(cameraFront)
-        close_camera(cameraBack)
+        # SECCIÓN 3
+        elif seccion_actual == SECCION_3:
+            print("\nRESOLVIENDO SECCIÓN 3")
+            resolver_seccion_3(communication,cameraFront)
+            print("Sección 3 completada\nPISTA B TERMINADA")
+            return True
 
 
 # SECCIÓN 1
@@ -292,14 +275,14 @@ def is_next_tile_red(camera):
 def resolver_seccion_2(communication, camera):
     sensors = get_sensors(communication)
     yaw_frontal = sensors["yaw"]
-
-    WALL_DISTANCE_SECCION2 = 15*10 # Distancia a la pared
+    exitFirstCheckpoint = False
+    WALL_DISTANCE_SECCION2 = 5.5*10 #6.5*10 # Distancia a la pared 
 
     while True:
         frame = read_frame(camera)
         if frame is None:
             continue
-        
+
         roiAdvance = get_roi(frame, constants.ROI.ADVANCE_SECTION_2) 
         if debug:
             coordinates = constants.ROI_COORDINATES[constants.ROI.ADVANCE_SECTION_2]
@@ -316,14 +299,15 @@ def resolver_seccion_2(communication, camera):
         percentageWhite = percentages[constants.Color.WHITE]
         percentageRed = percentages[constants.Color.RED]
         sensors = get_sensors(communication)
+        pared = sensors["front"] is not None and sensors["front"] < WALL_DISTANCE_SECCION2
 
-        if percentageRed>=30: # o si hay pared enfrentre
+        if (percentageRed>=30 or pared) and exitFirstCheckpoint: # o si hay pared enfrentre
             stop_robot(communication)
             goto(communication, yaw_frontal)
             #centrarCheckpoint(communication, camera) # Ver funcionalidad
             return True
 
-        elif percentageWhite >= 10:
+        elif percentageWhite >= 5 and exitFirstCheckpoint:
             stop_robot(communication)
             roiLine = get_roi(frame, constants.ROI.LINE_SECCION_2)
             _ , width = roiLine.shape[:2]
@@ -336,45 +320,29 @@ def resolver_seccion_2(communication, camera):
 
             if percentageGreenLeft > percentageGreenRight:
                 turn_left(communication)
-                centrarLine(communication, camera, True)
+                centrarLine(communication, percentageWhite)
                 turn_right(communication)
+                goto(communication, yaw_frontal)
+                center_angle(communication)
             else:
                 turn_right(communication)
-                centrarLine(communication, camera, False)
+                centrarLine(communication, percentageWhite)
                 turn_left(communication)
+                goto(communication, yaw_frontal)
+                center_angle(communication)
         else:
+            if not exitFirstCheckpoint:
+                if percentageRed <= 5:
+                    exitFirstCheckpoint = True
             move_front(communication, 4)
 
-def centrarLine(communication, camera, isRight): # isRight = True, busca la linea a la derecha o False a la izquierda
-    isSearchingGreen = True
-    while True:
-        frame = read_frame(camera)
-        if frame is None:
-            continue
-
-        if isSearchingGreen:
-            if isRight:
-                roiBottom = get_roi_mirror(frame, constants.ROI.LINE_SECTION_2_BOTTOM)
-            else:
-                roiBottom = get_roi(frame, constants.ROI.LINE_SECTION_2_BOTTOM)
-
-            percentageGreen = color_percentage_hsv(roiBottom, constants.Color.GREEN)
-            if percentageGreen >= 85:
-                isSearchingGreen = False
-            else:
-                move_front(communication, 4)
-
-        else:
-            if isRight:
-                roiTop = get_roi_mirror(frame, constants.ROI.LINE_SECTION_2_TOP)
-            else:
-                roiTop = get_roi(frame, constants.ROI.LINE_SECTION_2_TOP)
-
-            percentageWhite = color_percentage_hsv(roiTop, constants.Color.WHITE)
-            if percentageWhite >= 40:
-                return
-            else:
-                move_front(communication, 4)
+def centrarLine(communication, percentageWhite):
+    stop_robot(communication) 
+    time.sleep(0.1) 
+    if percentageWhite>=22:
+        move_front(communication)
+    else:
+        move_front(communication, 6) 
 
 def centrarCheckpoint(communication, camera): 
     while True:
@@ -429,7 +397,7 @@ def resolver_seccion_3(communication, camera):
         elif nextColor == constants.Color.PINK:
             goto(communication, SOUTH)  # Abajo
             center_angle(communication)
-        elif nextColor == constants.Color.GREEN:  # Verde --> terminar
+        elif nextColor == "green_pista_b":  # Verde --> terminar
             return
         nextColor = None
 
@@ -441,8 +409,7 @@ def get_next_tile_info(camera):
         constants.Color.ORANGE,
         constants.Color.BLUE,
         constants.Color.YELLOW,
-        constants.Color.PINK,
-        constants.Color.GREEN]
+        constants.Color.PINK]
 
     while time.time() - start_time < cameraTime:
         frame = read_frame(camera)
@@ -451,6 +418,8 @@ def get_next_tile_info(camera):
 
         roi = get_roi(frame, constants.ROI.NEXT_TILE_NIVELES)
         percentages = get_color_percentages_hsv(roi, *colors)
+        green_mask = hsv_mask_custom(roi, constants.GREEN_PISTA_B)
+        percentages["green_pista_b"] = (cv2.countNonZero(green_mask) / green_mask.size * 100 if green_mask.size > 0 else 0)
         color_samples.append(percentages)
 
         if debug:
@@ -471,24 +440,22 @@ def get_next_tile_info(camera):
             if cv2.waitKey(1) & 0xFF == ord("q"):
                 break
 
-    if color_samples:
-        average_percentages = {
-            color: sum(sample[color] for sample in color_samples) / len(color_samples)
-            for color in colors
-        }
+    if not color_samples:
+        return None
 
-        sorted_colors = sorted(average_percentages.items(), key=lambda item: item[1], reverse=True)
-        best_color, best_percentage = sorted_colors[0]
-        second_percentage = sorted_colors[1][1]
+    all_colors = colors + ["green_pista_b"]
+    average_percentages = {
+        color: sum(sample[color] for sample in color_samples) / len(color_samples)
+        for color in all_colors
+    }
 
-        if best_percentage >= 25 and best_percentage - second_percentage >= 10:
-            dominant_color = best_color
-        else:
-            dominant_color = None
-    else:
-        dominant_color = None
+    sorted_colors = sorted(average_percentages.items(), key=lambda item: item[1], reverse=True)
+    best_color, best_percentage = sorted_colors[0]
+    second_percentage = sorted_colors[1][1]
 
-    return dominant_color
+    if best_percentage >= 25 and best_percentage - second_percentage >= 10:
+        return best_color
+    return None
 
 # MOVIMIENTOS
 def move_front(communication, direccion=1):
@@ -612,21 +579,43 @@ def intake_off(communication):
 
 # MAIN
 def main():
-    while True:
-        communication = Communication(port="/dev/ttyUSB0",baudrate=9600)
+    cameraFront = None
+    cameraBack = None
+    communication = None
+    try:
+        cameraFront = open_camera(id_cameraFront)
+        if cameraFront is None:
+            raise RuntimeError("No se pudo abrir la cámara frontal")
+        cameraBack = open_camera(id_cameraBack)
+        if cameraBack is None:
+            raise RuntimeError("No se pudo abrir la cámara trasera")
+        for _ in range(30): # Leer los primeros 30 frames
+            read_frame(cameraFront)
+            read_frame(cameraBack)
 
-        try:
-            print("\nEsperando Arduino...")
-            communication.wait_ready()
-            solve_niveles(communication)
-            break
-        except ArduinoRestarted:
-            print("\nArduino se reinició o se perdió la comunicación\n")
+        while True:
+            communication = Communication(port="/dev/ttyUSB0",baudrate=9600)
+            try:
+                print("\nEsperando Arduino...")
+                communication.wait_ready()
+                solve_niveles(communication, cameraFront, cameraBack)
+                break
+            except ArduinoRestarted:
+                print("\nArduino se reinició o se perdió la comunicación\n")
+                communication.close()
+            except KeyboardInterrupt:
+                print("Programa detenido")
+                communication.close()
+                break
+    finally:
+        if communication is not None:
             communication.close()
-        except KeyboardInterrupt:
-            print("Programa detenido")
-            communication.close()
-            break
+        if cameraFront is not None:
+            close_camera(cameraFront)
+        if cameraBack is not None:
+            close_camera(cameraBack)
+        cv2.destroyAllWindows()
+
 
 if __name__ == "__main__":
     main()

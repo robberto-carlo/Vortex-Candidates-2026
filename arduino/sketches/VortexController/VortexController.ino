@@ -77,15 +77,16 @@ const int serialInterval = 100;
 int lastDirection = 0; 
 
 // Constantes
-const int PULSOS_NORMAL = 971/2; //1400; 
-const int PULSOS_OMNI = 971/2; 
+const int PULSOS_NORMAL = 971; //1400; 
+const int PULSOS_OMNI = 971; 
 
 const int DISTANCIA_PARED = 20*10;  // mm, máximo para considerar que hay pared
 const int TOLERANCIA_CENTRADO = 5; // mm
 const int VELOCIDAD_CENTRADO = 90;
 int wallCenteringCorrection = 0;
+int wheelCorrection = 0;
 
-const int DISTANCIA_OBJETIVO = 10*10; 
+const int DISTANCIA_OBJETIVO = 9*10; 
 const int TOLERANCIA_DISTANCIA = 10;
 const int VELOCIDAD_DISTANCIA = 100;
 
@@ -117,8 +118,10 @@ void setup() {
   lcd.init();                     
   lcd.backlight();
   lcd.setCursor(0, 0);
-  lcd.print("Iniciando MPU...");
-  
+  lcd.print("Vortex X");
+  lcd.setCursor(0, 1);
+  lcd.print(IS_PISTA_B ? "Pista B" : "Pista A");
+
   // Inicializar MPU6050
   mpu.initialize();
   if (!mpu.testConnection()) {
@@ -292,6 +295,13 @@ void loop() {
     else if (direccion == 5){ // Mover hacia atras hasta que usen STOP
       Serial.println("MOVIENDO OMNI ATRAS");
       moverAtras(100, 100, 100, 100);
+
+      Serial.print("DONE|MOVE|");
+      Serial.println(id);
+    }
+    else if (direccion == 6){ // Mover hacia adelante medio tile
+      Serial.println("MOVIENDO OMNI ADELANTE UN MEDIO");
+      avanzarPulsos(PULSOS_OMNI/2, 1);
 
       Serial.print("DONE|MOVE|");
       Serial.println(id);
@@ -564,7 +574,7 @@ void girarGrados(float gradosDeseados) {
 
     int velocidadGiro;
     if(IS_PISTA_B){
-      velocidadGiro = constrain(abs(errorGiro) * KpGiro, 95, 200); // 90,200
+      velocidadGiro = constrain(abs(errorGiro) * KpGiro, 105, 200); // 90,200
     }else{
       //velocidadGiro = constrain(abs(errorGiro) * KpGiro, 150, 230);
       velocidadGiro = constrain(abs(errorGiro) * KpGiro, 95, 200); // 90,200
@@ -712,10 +722,15 @@ void moverAdelante(int fr, int fl, int br, int bl) {
   digitalWrite(motBR1, HIGH); digitalWrite(motBR2, LOW);
   digitalWrite(motBL1, HIGH); digitalWrite(motBL2, LOW);
 
+  if(IS_PISTA_B){
+    wheelCorrection = 15;
+  }else{ // Pista A
+    wheelCorrection = 15;
+  }
   analogWrite(potmotFR, fr);
   analogWrite(potmotFL, fl);
   analogWrite(potmotBR, br);
-  analogWrite(potmotBL, bl);
+  analogWrite(potmotBL, bl + wheelCorrection);
 }
 
 void moverAtras(int fr, int fl, int br, int bl) {
@@ -725,10 +740,15 @@ void moverAtras(int fr, int fl, int br, int bl) {
   digitalWrite(motBR1, LOW);  digitalWrite(motBR2, HIGH);
   digitalWrite(motBL1, LOW);  digitalWrite(motBL2, HIGH);
 
+  if(IS_PISTA_B){
+    wheelCorrection = 15;
+  }else{ // Pista A
+    wheelCorrection = 15;
+  }
   analogWrite(potmotFR, fr);
   analogWrite(potmotFL, fl);
   analogWrite(potmotBR, br);
-  analogWrite(potmotBL, bl);
+  analogWrite(potmotBL, bl + wheelCorrection);
 }
 
 // Funciones de Movimientos con ruedas mecanum
@@ -958,7 +978,7 @@ void centradoGrados() {
     
     // Hay pared a la derecha
     if (paredRight) {
-      int s1 = distancias[1] + 40; // +45 = correcion del sensor tof - TEMPORAL 
+      int s1 = distancias[1] + 30; // +45 = correcion del sensor tof - TEMPORAL 
       int s2 = distancias[2]; 
 
       int error = s1 - s2;
@@ -1001,13 +1021,13 @@ void centradoDistancia() {
     actualizarDistancias();
 
     if(IS_PISTA_B){
-      wallCenteringCorrection = -35; // -40 
+      wallCenteringCorrection = -45; // -45 
     }else{ // Es pista A - MAZE
       wallCenteringCorrection = 0; 
     }
 
     // Hay pared en frente
-    if (distancias[0] < DISTANCIA_PARED + wallCenteringCorrection) {
+    if (distancias[0] < DISTANCIA_PARED) {
       int distancia = distancias[0];
       int error = distancia - (DISTANCIA_OBJETIVO + wallCenteringCorrection);
 
@@ -1037,11 +1057,11 @@ void centradoDistancia() {
     if(IS_PISTA_B){
       wallCenteringCorrection = 0; 
     }else{ // Es pista A - MAZE
-      wallCenteringCorrection = 50; 
+      wallCenteringCorrection = 40; 
     }
 
     // Hay pared atras
-    if (distancias[3] < DISTANCIA_PARED + wallCenteringCorrection) {
+    if (distancias[3] < DISTANCIA_PARED) {
       int distancia = distancias[3];
       int error = distancia - (DISTANCIA_OBJETIVO + wallCenteringCorrection);
 
@@ -1049,7 +1069,7 @@ void centradoDistancia() {
         parar();
         return;
       }
-
+      
       if (error > 0) { // lejos -> retroceder
         moverAtras(
           VELOCIDAD_DISTANCIA,
@@ -1062,12 +1082,10 @@ void centradoDistancia() {
           VELOCIDAD_DISTANCIA,
           VELOCIDAD_DISTANCIA,
           VELOCIDAD_DISTANCIA,
-          VELOCIDAD_DISTANCIA);
+          VELOCIDAD_DISTANCIA );
       }
-
       continue;
     }
-
     // No hay pared ni enfrente ni atras
     parar();
     return;

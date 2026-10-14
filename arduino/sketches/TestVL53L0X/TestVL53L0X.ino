@@ -3,7 +3,7 @@
 
 // true = 7 sensores
 // false = 6 sensores
-const bool USE_7_SENSORS = true;
+const bool USE_7_SENSORS = false;
 
 // Pines XSHUT
 const uint8_t xshutPins[7] = {
