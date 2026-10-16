@@ -25,15 +25,15 @@ class ROI(Enum):
 ROI_COORDINATES = {
     ROI.LINE_SECCION_2: {
         "x1": 0,
-        "y1": 220,
+        "y1": 205,
         "x2": 640,
-        "y2": 280
+        "y2": 295
     },
     ROI.ADVANCE_SECTION_2: {
         "x1": 195,
-        "y1": 220,
+        "y1": 205,
         "x2": 440,
-        "y2": 280
+        "y2": 295
     },
     ROI.LINE_SECTION_2_TOP: {
         "x1": 133,
@@ -78,10 +78,13 @@ COLOR_RANGES_HSV = {
 
         #(np.array([144, 68, 41]), np.array([179, 181, 88])),
         #(np.array([0, 61, 46]), np.array([30, 175, 89]))
+        #(np.array([0, 100, 100]), np.array([10, 255, 255])),
+        #(np.array([170, 100, 100]), np.array([180, 255, 255]))
     ],
 
     Color.GREEN: [
-        (np.array([42, 50, 54]), np.array([79, 118, 149]))
+        #(np.array([42, 50, 54]), np.array([79, 118, 149]))
+        (np.array([70, 24, 80]), np.array([84, 202, 170]))
     ],
 
     Color.BLUE: [
@@ -105,13 +108,45 @@ COLOR_RANGES_HSV = {
     ],
 }
 
-ORANGE_BALL = [
-    (np.array([0, 90, 150]), np.array([39, 204, 255]))
-]
+COLOR_RANGES_HSV_PISTA_B = {
+    Color.RED: [
+        (np.array([0, 129, 80]), np.array([7, 222, 231]))
+    ],
 
-GREEN_PISTA_B = [
-    (np.array([31, 42, 130]), np.array([47, 109, 229]))
-]
+    Color.GREEN: [
+        #(np.array([42, 50, 54]), np.array([79, 118, 149])) 
+        (np.array([58, 18, 20]), np.array([88, 226, 178]))
+    ],
+
+    Color.BLUE: [
+        (np.array([93, 75, 114]), np.array([115, 193, 213]))
+    ],
+
+    Color.ORANGE: [
+        (np.array([0, 90, 64]), np.array([18, 200, 255]))
+    ],
+
+    Color.YELLOW: [
+        (np.array([14, 72, 93]), np.array([25, 175, 211]))
+    ],
+
+    Color.PINK: [
+        (np.array([165, 100, 130]), np.array([179, 166, 234]))
+    ],
+
+    Color.WHITE: [
+        #(np.array([0, 0, 37]), np.array([179, 38, 255])) 
+        (np.array([0, 0, 248]), np.array([30, 32, 255]))
+    ],
+
+    "ORANGE_BALL": [
+        (np.array([0, 102, 66]), np.array([15, 255, 182]))
+    ],
+
+    "LIME_GREEN": [
+        (np.array([31, 42, 130]), np.array([47, 109, 229]))
+    ],
+}
 
 # Color detection - THRESHOLD
 COLOR_RANGES_GRAY = {

@@ -150,11 +150,11 @@ def execute_direction(communication, direction, camera):
         if last_aruco is not None:
             next_aruco = last_aruco
             last_aruco = None
-
+    
     if blockAruco:
         if next_aruco == 17:
             next_aruco = None
-
+        
     if debug:
         print("Color siguiente tile:", next_color.name if next_color else None)
         print("ArUco siguiente tile:", next_aruco)

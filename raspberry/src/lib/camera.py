@@ -30,7 +30,7 @@ def get_roi(frame, roi):
 def get_new_roi(frame, x1, y1, x2, y2):
     return frame[y1:y2, x1:x2]
 
-def mirror_roi_coordinates(frame, roi):
+def get_roi_mirror(frame, roi):
     coordinates = constants.ROI_COORDINATES[roi]
     x1 = coordinates["x1"]
     y1 = coordinates["y1"]
@@ -47,6 +47,14 @@ def color_percentage_hsv(frame, color):
     percentage = (color_pixels / total_pixels) * 100
     return percentage
 
+def color_percentage_hsv_pista_b(frame, color):
+    mask = hsv_mask_custom(frame,constants.COLOR_RANGES_HSV_PISTA_B[color])
+    color_pixels = cv2.countNonZero(mask)
+    total_pixels = mask.size
+    if total_pixels == 0:
+        return 0.0
+    return (color_pixels / total_pixels) * 100
+
 def get_color_percentages_hsv(frame, *colors):
     hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
     total_pixels = hsv.shape[0] * hsv.shape[1]
@@ -56,7 +64,7 @@ def get_color_percentages_hsv(frame, *colors):
 
     for color in colors:
         mask = np.zeros(hsv.shape[:2], dtype=np.uint8)
-        for lower, upper in constants.COLOR_RANGES_HSV[color]:
+        for lower, upper in constants.COLOR_RANGES_HSV_PISTA_B[color]:
             mask |= cv2.inRange(hsv, lower, upper)
 
         results[color] = (cv2.countNonZero(mask) / total_pixels) * 100

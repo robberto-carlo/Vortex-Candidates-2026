@@ -7,6 +7,7 @@ from lib import constants
 from lib.communication import Communication, ArduinoRestarted
 from lib.camera import (
     color_percentage_hsv,
+    color_percentage_hsv_pista_b,
     detect_object,
     filter_mask,
     get_color_percentages_hsv,
@@ -149,7 +150,7 @@ def centrar_pelota(communication, camera):
             continue
 
         # Detectar color naranja
-        mask = hsv_mask_custom(frame, constants.ORANGE_BALL)
+        mask = hsv_mask_custom(frame, constants.COLOR_RANGES_HSV_PISTA_B["ORANGE_BALL"])
         mask = filter_mask(mask)
 
         obj = detect_object(mask) # Detectar objeto
@@ -199,6 +200,10 @@ def exit_seccion_1(communication, camera):
         if(is_next_tile_red(camera)):
             move_front(communication)
             return
+        else:
+            move_back(communication,5)
+            time.sleep(0.5)
+            stop_robot(communication)
 
     turn_left(communication)
     move_front(communication)
@@ -210,14 +215,20 @@ def exit_seccion_1(communication, camera):
         if(right_is_free(sensors)):
             turn_right(communication)
             if(is_next_tile_red(camera)):
+                center(communication)
                 move_front(communication)
                 return
             else:
                 turn_left(communication)
         if(front_is_free(sensors)):
             if(is_next_tile_red(camera)):
+                center(communication)
                 move_front(communication)
                 return
+            else:
+                move_back(communication,5)
+                time.sleep(0.5)
+                stop_robot(communication)
 
         turn_left(communication)
         center(communication)
@@ -228,6 +239,7 @@ def exit_seccion_1(communication, camera):
         if(right_is_free(sensors)):
             turn_right(communication)
             if(is_next_tile_red(camera)):
+                center(communication)
                 move_front(communication)
                 return
             else:
@@ -245,7 +257,7 @@ def is_next_tile_red(camera):
             continue
 
         roi = get_roi(frame, constants.ROI.NEXT_TILE_NIVELES)
-        percentageRed = color_percentage_hsv(roi, constants.Color.RED)
+        percentageRed = color_percentage_hsv_pista_b(roi, constants.Color.RED)
 
         if debug:
             roi_coords = constants.ROI_COORDINATES[constants.ROI.NEXT_TILE_NIVELES]
@@ -275,39 +287,55 @@ def is_next_tile_red(camera):
 def resolver_seccion_2(communication, camera):
     sensors = get_sensors(communication)
     yaw_frontal = sensors["yaw"]
-    exitFirstCheckpoint = False
-    WALL_DISTANCE_SECCION2 = 5.5*10 #6.5*10 # Distancia a la pared 
+    WALLFRONT_DISTANCE_SECCION2 = 5.5*10 #6.5*10 # Distancia a la pared 
+    WALL_DISTANCE_SECCION2 = 7.5*10 #6.5*10 # Distancia a la pared 
+    move_front(communication)
 
     while True:
         frame = read_frame(camera)
         if frame is None:
             continue
 
-        roiAdvance = get_roi(frame, constants.ROI.ADVANCE_SECTION_2) 
+        coordinates = constants.ROI_COORDINATES[constants.ROI.ADVANCE_SECTION_2]
+        x1 = coordinates["x1"]
+        y1 = coordinates["y1"]
+        x2 = coordinates["x2"]
+        y2 = coordinates["y2"]
+
         if debug:
-            coordinates = constants.ROI_COORDINATES[constants.ROI.ADVANCE_SECTION_2]
-            x1 = coordinates["x1"]
-            y1 = coordinates["y1"]
-            x2 = coordinates["x2"]
-            y2 = coordinates["y2"]
             cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 255), 2)
             cv2.imshow("Camera", frame)
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
 
+        sensors = get_sensors(communication)
+        paredFront = sensors["front"] is not None and sensors["front"] < WALLFRONT_DISTANCE_SECCION2
+        paredRight = sensors["right"] is not None and sensors["right"] < WALL_DISTANCE_SECCION2
+        paredLeft = sensors["left"] is not None and sensors["left"] < WALL_DISTANCE_SECCION2
+        if paredLeft and paredRight:
+            roiAdvance = frame[y1:y2, x1 + 55:x2 - 45] # recortar x1 a 245px y recortar x2 a 400px
+        elif paredLeft:
+            roiAdvance = frame[y1:y2, x1 + 55:x2] # recortar x1 a 245px
+        elif paredRight:
+            roiAdvance = frame[y1:y2, x1:x2 - 45] #recortar x2 a 400px
+        else:
+            roiAdvance = frame[y1:y2, x1:x2]
+
         percentages = get_color_percentages_hsv(roiAdvance,constants.Color.WHITE,constants.Color.RED)
         percentageWhite = percentages[constants.Color.WHITE]
         percentageRed = percentages[constants.Color.RED]
-        sensors = get_sensors(communication)
-        pared = sensors["front"] is not None and sensors["front"] < WALL_DISTANCE_SECCION2
 
-        if (percentageRed>=30 or pared) and exitFirstCheckpoint: # o si hay pared enfrentre
+        if percentageRed>=30 or paredFront: # o si hay pared enfrentre
             stop_robot(communication)
+            time.sleep(0.1)
             goto(communication, yaw_frontal)
-            #centrarCheckpoint(communication, camera) # Ver funcionalidad
+            time.sleep(0.1)
+            centrarCheckpoint(communication, paredFront)
+            centerRedTile(communication)
+            #move_front(communication)
             return True
 
-        elif percentageWhite >= 5 and exitFirstCheckpoint:
+        elif percentageWhite >= 5:
             stop_robot(communication)
             roiLine = get_roi(frame, constants.ROI.LINE_SECCION_2)
             _ , width = roiLine.shape[:2]
@@ -315,60 +343,102 @@ def resolver_seccion_2(communication, camera):
 
             roiLeft = roiLine[:, :middle_x]
             roiRight = roiLine[:, middle_x:]
-            percentageGreenLeft = color_percentage_hsv(roiLeft, constants.Color.GREEN)
-            percentageGreenRight = color_percentage_hsv(roiRight, constants.Color.GREEN)
+            roiLeft_verificacion = roiAdvance[:, :35]
+            roiRight_verificacion = roiAdvance[:, -35:]
+
+            percentageGreenLeft = color_percentage_hsv_pista_b(roiLeft, constants.Color.GREEN)
+            percentageGreenRight = color_percentage_hsv_pista_b(roiRight, constants.Color.GREEN)
+            percentageWhiteLeft = color_percentage_hsv_pista_b(roiLeft_verificacion, constants.Color.WHITE)
+            percentageWhiteRight = color_percentage_hsv_pista_b(roiRight_verificacion, constants.Color.WHITE)
+
+            if percentageWhiteLeft < 2 and percentageWhiteRight < 2:
+                move_front(communication)
+                continue
+
+            lineWhite = 0
+            if percentageWhiteLeft >= 10:
+                lineWhite=0
+            if percentageWhiteRight >= 10:
+                lineWhite=0
 
             if percentageGreenLeft > percentageGreenRight:
                 turn_left(communication)
-                centrarLine(communication, percentageWhite)
+                centrarLine(communication, lineWhite)
                 turn_right(communication)
                 goto(communication, yaw_frontal)
                 center_angle(communication)
             else:
                 turn_right(communication)
-                centrarLine(communication, percentageWhite)
+                centrarLine(communication, lineWhite)
                 turn_left(communication)
                 goto(communication, yaw_frontal)
                 center_angle(communication)
         else:
-            if not exitFirstCheckpoint:
-                if percentageRed <= 5:
-                    exitFirstCheckpoint = True
-            move_front(communication, 4)
+            stop_robot(communication)
+            time.sleep(0.1) 
+            move_front(communication)
 
-def centrarLine(communication, percentageWhite):
+def centrarLine(communication, lineWhite):
     stop_robot(communication) 
     time.sleep(0.1) 
-    if percentageWhite>=22:
+    if lineWhite == 2:
         move_front(communication)
     else:
         move_front(communication, 6) 
 
-def centrarCheckpoint(communication, camera): 
+def centrarCheckpoint(communication, paredFront): 
     while True:
-        frame = read_frame(camera)
-        if frame is None:
+        sensors = get_sensors(communication)
+        paredRight = sensors["right"] 
+        paredLeft = sensors["left"]
+        if paredRight is None or paredLeft is None:
             continue
 
-        roi = get_roi(frame,constants.ROI.ADVANCE_SECTION_2)
-        mask = hsv_mask(roi,constants.Color.RED)
-        obj = detect_object(mask)
-        if obj is None:
-            stop_robot(communication)
-            continue
+        if paredFront:
+            center(communication)
+            if paredRight > paredLeft:
+                turn_right(communication)
+                center(communication)
+                move_front(communication)
+                center(communication)
+                turn_left(communication)
+                center(communication)
+                sensors = get_sensors(communication)
+                if (front_is_free(sensors)):
+                    return
+            else: # Pared izquierda es la mas lejana
+                turn_left(communication)
+                center(communication)
+                move_front(communication)
+                center(communication)
+                turn_right(communication)
+                center(communication)
+                sensors = get_sensors(communication)
+                if (front_is_free(sensors)):
+                    return
 
-        center_x = roi.shape[1] // 2
-        object_x = obj["center_x"]
-        error = object_x - center_x
-
-        if abs(error) < 30: # px de tolerancia para considera centrado el tile
-            stop_robot(communication)
-            print("Checkpoint centrado")
-            return
-        elif error < 0:
-            swipe_left(communication)
-        else:
-            swipe_right(communication)
+        else: # Detecto el tile rojo
+            center(communication)
+            if paredRight < paredLeft:
+                turn_right(communication)
+                center(communication)
+                turn_left(communication)
+                center(communication)
+                sensors = get_sensors(communication)
+                if (front_is_free(sensors)):
+                    return
+                else:
+                    paredFront = True
+            else: # Pared izquierda es la mas lejana
+                turn_left(communication)
+                center(communication)
+                turn_right(communication)
+                center(communication)
+                sensors = get_sensors(communication)
+                if (front_is_free(sensors)):
+                    return
+                else:
+                    paredFront = True
 
 
 # SECCIÓN 3
@@ -397,7 +467,7 @@ def resolver_seccion_3(communication, camera):
         elif nextColor == constants.Color.PINK:
             goto(communication, SOUTH)  # Abajo
             center_angle(communication)
-        elif nextColor == "green_pista_b":  # Verde --> terminar
+        elif nextColor == "LIME_GREEN":  # Verde --> terminar
             return
         nextColor = None
 
@@ -409,7 +479,8 @@ def get_next_tile_info(camera):
         constants.Color.ORANGE,
         constants.Color.BLUE,
         constants.Color.YELLOW,
-        constants.Color.PINK]
+        constants.Color.PINK,
+        "LIME_GREEN"]
 
     while time.time() - start_time < cameraTime:
         frame = read_frame(camera)
@@ -418,8 +489,6 @@ def get_next_tile_info(camera):
 
         roi = get_roi(frame, constants.ROI.NEXT_TILE_NIVELES)
         percentages = get_color_percentages_hsv(roi, *colors)
-        green_mask = hsv_mask_custom(roi, constants.GREEN_PISTA_B)
-        percentages["green_pista_b"] = (cv2.countNonZero(green_mask) / green_mask.size * 100 if green_mask.size > 0 else 0)
         color_samples.append(percentages)
 
         if debug:
@@ -443,17 +512,16 @@ def get_next_tile_info(camera):
     if not color_samples:
         return None
 
-    all_colors = colors + ["green_pista_b"]
     average_percentages = {
         color: sum(sample[color] for sample in color_samples) / len(color_samples)
-        for color in all_colors
+        for color in colors
     }
 
     sorted_colors = sorted(average_percentages.items(), key=lambda item: item[1], reverse=True)
     best_color, best_percentage = sorted_colors[0]
     second_percentage = sorted_colors[1][1]
 
-    if best_percentage >= 25 and best_percentage - second_percentage >= 10:
+    if best_percentage >= 15 and best_percentage - second_percentage >= 10:
         return best_color
     return None
 
@@ -499,6 +567,26 @@ def center(communication):
     time.sleep(0.1)
     center_distance(communication)
     time.sleep(0.1)
+
+def centerRedTile(communication): # PROBAR
+    targetDistance = 970
+    error = 10
+
+    while True:
+        sensors = get_sensors(communication)
+        frontDistance = sensors["front"]
+
+        if frontDistance is None:
+            stop_robot(communication)
+            continue
+
+        if frontDistance > targetDistance + error:
+            move_front(communication, 4)
+        elif frontDistance < targetDistance - error:
+            move_back(communication, 5)
+        else:
+            stop_robot(communication)
+            break
 
 # GIROS
 def turn_right(communication, degrees=turnDegrees):

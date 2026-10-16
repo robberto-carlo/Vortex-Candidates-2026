@@ -59,7 +59,7 @@ int sensorBack = 0;
 int sensorDown = 0;
 
 // PID
-const float Kp = 25.0;
+const float Kp = 10; // 8 Niveles - 25 - MAZE;
 const float KpSwipe = 8.0;
 
 // Velocidades base
@@ -85,6 +85,7 @@ const int TOLERANCIA_CENTRADO = 5; // mm
 const int VELOCIDAD_CENTRADO = 90;
 int wallCenteringCorrection = 0;
 int wheelCorrection = 0;
+int spin = false;
 
 const int DISTANCIA_OBJETIVO = 9*10; 
 const int TOLERANCIA_DISTANCIA = 10;
@@ -353,7 +354,7 @@ void loop() {
           Serial.println("ERROR|DIRECCION");
           return;
       }
-
+      spin = true;
       Serial.println("DONE|SPIN|" + String(id));
   }
 
@@ -409,6 +410,13 @@ void loop() {
   else if (comando.startsWith("STOP|")) {
     int id = comando.substring(5).toInt();
     parar();
+
+    if (spin) {
+        actualizarYaw();
+        targetYaw = currentYaw;
+        spin = false;
+    }
+
     Serial.print("DONE|STOP|");
     Serial.println(id);
   }
@@ -545,6 +553,11 @@ void girarGrados(float gradosDeseados) {
   float anguloInicial = currentYaw;
   float anguloObjetivo = anguloInicial + gradosDeseados; 
   float KpGiro = 2.5; 
+  if (IS_PISTA_B){
+    KpGiro = 2.5; // 2.5 
+  }else{ // Es pista A
+    KpGiro = 2.5; 
+  }
 
   unsigned long tiempoGiroPrevio = millis();
   while (true) {
@@ -574,7 +587,7 @@ void girarGrados(float gradosDeseados) {
 
     int velocidadGiro;
     if(IS_PISTA_B){
-      velocidadGiro = constrain(abs(errorGiro) * KpGiro, 105, 200); // 90,200
+      velocidadGiro = constrain(abs(errorGiro) * KpGiro, 125, 230); // 115,200
     }else{
       //velocidadGiro = constrain(abs(errorGiro) * KpGiro, 150, 230);
       velocidadGiro = constrain(abs(errorGiro) * KpGiro, 95, 200); // 90,200
@@ -599,6 +612,7 @@ void girarGrados(float gradosDeseados) {
   }
 
   parar();
+  actualizarYaw();
   targetYaw = currentYaw; 
 }
 
@@ -996,7 +1010,7 @@ void centradoGrados() {
       continue;
     } 
     else { // Si no hay pared derecha, intentamos usar la izquierda
-      int s1 = distancias[4] + 5; // S5
+      int s1 = distancias[4] + 3; // S5
       int s2 = distancias[5]; // S6
 
       int error = s1 - s2;
@@ -1021,7 +1035,7 @@ void centradoDistancia() {
     actualizarDistancias();
 
     if(IS_PISTA_B){
-      wallCenteringCorrection = -45; // -45 
+      wallCenteringCorrection = -40; // -50 
     }else{ // Es pista A - MAZE
       wallCenteringCorrection = 0; 
     }
@@ -1055,13 +1069,13 @@ void centradoDistancia() {
     }
 
     if(IS_PISTA_B){
-      wallCenteringCorrection = 0; 
+      wallCenteringCorrection = 90; 
     }else{ // Es pista A - MAZE
       wallCenteringCorrection = 40; 
     }
 
     // Hay pared atras
-    if (distancias[3] < DISTANCIA_PARED) {
+    if (distancias[3] < DISTANCIA_PARED + wallCenteringCorrection) {
       int distancia = distancias[3];
       int error = distancia - (DISTANCIA_OBJETIVO + wallCenteringCorrection);
 
